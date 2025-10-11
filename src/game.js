@@ -2,7 +2,7 @@
  * Main game class for BounceFlow
  */
 
-import Matter from 'matter-js';
+import * as Matter from 'matter-js';
 import { Ball } from './ball.js';
 import { Surface } from './surface.js';
 import { Target } from './target.js';

@@ -2,7 +2,7 @@
  * Interactive surface entity for BounceFlow
  */
 
-import Matter from 'matter-js';
+import * as Matter from 'matter-js';
 import { pointNearLine, degToRad, radToDeg } from './utils.js';
 
 export class Surface {

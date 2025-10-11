@@ -2,7 +2,7 @@
  * Ball entity with dynamic properties for BounceFlow
  */
 
-import Matter from 'matter-js';
+import * as Matter from 'matter-js';
 import { lerpColor, clamp } from './utils.js';
 
 export class Ball {

@@ -7,5 +7,11 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
+    commonjsOptions: {
+      include: [/matter-js/, /node_modules/],
+    },
+  },
+  optimizeDeps: {
+    include: ['matter-js'],
   },
 });
