@@ -12,8 +12,9 @@ export class Ball {
 
         // Create physics body
         this.body = Matter.Bodies.circle(x, y, radius, {
-            restitution: 0.5,
-            friction: 0.1,
+            restitution: 0.8,
+            friction: 0.001,
+            frictionAir: 0.001,
             density: 0.001,
             label: 'ball'
         });

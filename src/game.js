@@ -51,14 +51,19 @@ export class Game {
 
     setupPhysics() {
         // Create Matter.js engine
-        this.engine = Matter.Engine.create();
+        this.engine = Matter.Engine.create({
+            enableSleeping: false
+        });
         this.world = this.engine.world;
 
-        // Configure gravity
-        this.world.gravity.y = 1;
+        // Configure gravity (scale for better gameplay)
+        this.world.gravity.y = 0.5;
+
+        // Disable air resistance
+        this.world.gravity.scale = 0.001;
 
         // Create walls
-        const wallOptions = { isStatic: true, friction: 0.3, restitution: 0.5 };
+        const wallOptions = { isStatic: true, friction: 0.1, restitution: 0.9 };
         this.walls = [
             Matter.Bodies.rectangle(this.canvas.width / 2, -25, this.canvas.width, 50, wallOptions), // Top
             Matter.Bodies.rectangle(this.canvas.width / 2, this.canvas.height + 25, this.canvas.width, 50, wallOptions), // Bottom
@@ -369,7 +374,7 @@ export class Game {
 
         // Recreate walls with new dimensions
         Matter.World.remove(this.world, this.walls);
-        const wallOptions = { isStatic: true, friction: 0.3, restitution: 0.5 };
+        const wallOptions = { isStatic: true, friction: 0.1, restitution: 0.9 };
         this.walls = [
             Matter.Bodies.rectangle(width / 2, -25, width, 50, wallOptions),
             Matter.Bodies.rectangle(width / 2, height + 25, width, 50, wallOptions),
