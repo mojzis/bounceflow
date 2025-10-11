@@ -41,8 +41,8 @@ export class Surface {
             {
                 isStatic: true,
                 angle: degToRad(this.angle),
-                friction: 0.1,
-                restitution: 0.9,
+                friction: 0,
+                restitution: 0.99,
                 label: 'surface'
             }
         );
