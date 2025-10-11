@@ -7,6 +7,7 @@ import { Game } from './game.js';
 // Initialize the game when DOM is loaded
 function init() {
     const canvas = document.getElementById('gameCanvas');
+    let game = null;
 
     // Set canvas size
     function resizeCanvas() {
@@ -25,7 +26,7 @@ function init() {
     window.addEventListener('resize', resizeCanvas);
 
     // Create game instance
-    const game = new Game(canvas);
+    game = new Game(canvas);
 
     // Setup input handlers
     canvas.addEventListener('mousedown', (e) => game.handleMouseDown(e));
