@@ -13,7 +13,7 @@ export class Surface {
         this.angle = angle;
         this.locked = locked;
         this.physicsWorld = physicsWorld;
-        this.thickness = 10;
+        this.thickness = 20; // Thicker for better collision detection
 
         // Interaction state
         this.isDragging = false;

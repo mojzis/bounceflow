@@ -52,7 +52,9 @@ export class Game {
     setupPhysics() {
         // Create Matter.js engine
         this.engine = Matter.Engine.create({
-            enableSleeping: false
+            enableSleeping: false,
+            positionIterations: 10,
+            velocityIterations: 10
         });
         this.world = this.engine.world;
 
@@ -211,8 +213,10 @@ export class Game {
     }
 
     update(deltaTime) {
-        // Update physics
-        Matter.Engine.update(this.engine, deltaTime);
+        // Update physics with fixed timestep (16.67ms = 60Hz)
+        // This prevents tunneling issues
+        const fixedTimeStep = 1000 / 60;
+        Matter.Engine.update(this.engine, fixedTimeStep);
 
         // Update entities
         if (this.ball) {
