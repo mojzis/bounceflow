@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="BounceFlow - Learn physics through play">
+    <title>BounceFlow - Prototype</title>
+    <link rel="stylesheet" href="/src/styles/style.css">
+</head>
+<body>
+    <div id="app">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div id="property-indicator">
+                <div class="property-label">Elasticity</div>
+                <div class="property-bar">
+                    <div id="elasticity-fill" class="property-fill"></div>
+                </div>
+            </div>
+            <div id="controls">
+                <button id="playButton" class="btn-primary">Play</button>
+                <button id="restartButton" class="btn-secondary">Restart (R)</button>
+                <div id="level-info">Level <span id="level-number">1</span></div>
+            </div>
+            <div id="hint-box" class="hint">
+                <p id="hint-text">Drag surfaces to guide the ball to the star!</p>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
