@@ -16,7 +16,7 @@ export const LEVELS = [
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Drag the surface to guide the ball to the star!"
+        hint: "Tab to select • Q/E or ←/→ to rotate • WASD/arrows to move"
     },
     {
         id: 2,

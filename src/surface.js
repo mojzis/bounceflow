@@ -21,6 +21,7 @@ export class Surface {
         this.dragOffset = { x: 0, y: 0 };
         this.rotationStartAngle = 0;
         this.hovered = false;
+        this.selected = false; // For keyboard control
 
         // Create physics body
         this.createPhysicsBody();
@@ -113,6 +114,19 @@ export class Surface {
         Matter.Body.setAngle(this.body, degToRad(this.angle));
     }
 
+    rotate(degrees) {
+        if (this.locked) return;
+        this.angle += degrees;
+        this.updatePhysicsBody();
+    }
+
+    move(dx, dy) {
+        if (this.locked) return;
+        this.x += dx;
+        this.y += dy;
+        this.updatePhysicsBody();
+    }
+
     getEndpoints() {
         const angleRad = degToRad(this.angle);
         const halfWidth = this.width / 2;
@@ -140,6 +154,9 @@ export class Surface {
             ctx.lineWidth = this.thickness;
         } else if (this.isDragging || this.isRotating) {
             ctx.strokeStyle = '#4ECDC4';
+            ctx.lineWidth = this.thickness + 4;
+        } else if (this.selected) {
+            ctx.strokeStyle = '#FFE66D'; // Yellow for keyboard selection
             ctx.lineWidth = this.thickness + 4;
         } else if (this.hovered) {
             ctx.strokeStyle = '#95E1D3';

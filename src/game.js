@@ -31,6 +31,7 @@ export class Game {
         this.ball = null;
         this.surfaces = [];
         this.targets = [];
+        this.selectedSurfaceIndex = -1; // For keyboard control
 
         // Input handling
         this.mousePos = { x: 0, y: 0 };
@@ -94,6 +95,28 @@ export class Game {
                 this.restart();
             } else if (e.key === ' ' && this.currentState === this.states.MENU) {
                 this.startPlay();
+                e.preventDefault();
+            } else if (e.key === 'Tab') {
+                this.selectNextSurface();
+                e.preventDefault();
+            } else if (e.key === 'q' || e.key === 'Q' || e.key === 'ArrowLeft') {
+                this.rotateSelectedSurface(-5);
+                e.preventDefault();
+            } else if (e.key === 'e' || e.key === 'E' || e.key === 'ArrowRight') {
+                this.rotateSelectedSurface(5);
+                e.preventDefault();
+            } else if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
+                this.moveSelectedSurface(0, -5);
+                e.preventDefault();
+            } else if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') {
+                this.moveSelectedSurface(0, 5);
+                e.preventDefault();
+            } else if (e.key === 'a' || e.key === 'A') {
+                this.moveSelectedSurface(-5, 0);
+                e.preventDefault();
+            } else if (e.key === 'd' || e.key === 'D') {
+                this.moveSelectedSurface(5, 0);
+                e.preventDefault();
             }
         });
     }
@@ -152,9 +175,48 @@ export class Game {
             Matter.World.remove(this.world, surface.body);
         });
         this.surfaces = [];
+        this.selectedSurfaceIndex = -1;
 
         // Clear targets
         this.targets = [];
+    }
+
+    selectNextSurface() {
+        const movableSurfaces = this.surfaces.filter(s => !s.locked);
+        if (movableSurfaces.length === 0) return;
+
+        // Deselect current
+        if (this.selectedSurfaceIndex >= 0 && this.selectedSurfaceIndex < this.surfaces.length) {
+            this.surfaces[this.selectedSurfaceIndex].selected = false;
+        }
+
+        // Find next movable surface
+        let nextIndex = this.selectedSurfaceIndex + 1;
+        while (nextIndex < this.surfaces.length && this.surfaces[nextIndex].locked) {
+            nextIndex++;
+        }
+
+        // Wrap around
+        if (nextIndex >= this.surfaces.length) {
+            nextIndex = this.surfaces.findIndex(s => !s.locked);
+        }
+
+        this.selectedSurfaceIndex = nextIndex;
+        if (this.selectedSurfaceIndex >= 0) {
+            this.surfaces[this.selectedSurfaceIndex].selected = true;
+        }
+    }
+
+    rotateSelectedSurface(degrees) {
+        if (this.selectedSurfaceIndex >= 0 && this.selectedSurfaceIndex < this.surfaces.length) {
+            this.surfaces[this.selectedSurfaceIndex].rotate(degrees);
+        }
+    }
+
+    moveSelectedSurface(dx, dy) {
+        if (this.selectedSurfaceIndex >= 0 && this.selectedSurfaceIndex < this.surfaces.length) {
+            this.surfaces[this.selectedSurfaceIndex].move(dx, dy);
+        }
     }
 
     startPlay() {
