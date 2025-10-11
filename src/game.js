@@ -84,13 +84,41 @@ export class Game {
         this.levelNumber = document.getElementById('level-number');
         this.hintText = document.getElementById('hint-text');
         this.elasticityFill = document.getElementById('elasticity-fill');
+        this.helpOverlay = document.getElementById('help-overlay');
+        this.helpButton = document.getElementById('helpButton');
+        this.closeHelpButton = document.getElementById('close-help');
 
         // Button handlers
         this.playButton.addEventListener('click', () => this.startPlay());
         this.restartButton.addEventListener('click', () => this.restart());
+        this.helpButton.addEventListener('click', () => this.toggleHelp());
+        this.closeHelpButton.addEventListener('click', () => this.hideHelp());
+
+        // Click outside to close help
+        this.helpOverlay.addEventListener('click', (e) => {
+            if (e.target === this.helpOverlay) {
+                this.hideHelp();
+            }
+        });
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            // Help toggle
+            if (e.key === 'h' || e.key === 'H') {
+                this.toggleHelp();
+                e.preventDefault();
+                return;
+            } else if (e.key === 'Escape') {
+                this.hideHelp();
+                e.preventDefault();
+                return;
+            }
+
+            // Don't process other keys if help is showing
+            if (!this.helpOverlay.classList.contains('hidden')) {
+                return;
+            }
+
             if (e.key === 'r' || e.key === 'R') {
                 this.restart();
             } else if (e.key === ' ' && this.currentState === this.states.MENU) {
@@ -217,6 +245,14 @@ export class Game {
         if (this.selectedSurfaceIndex >= 0 && this.selectedSurfaceIndex < this.surfaces.length) {
             this.surfaces[this.selectedSurfaceIndex].move(dx, dy);
         }
+    }
+
+    toggleHelp() {
+        this.helpOverlay.classList.toggle('hidden');
+    }
+
+    hideHelp() {
+        this.helpOverlay.classList.add('hidden');
     }
 
     startPlay() {

@@ -21,9 +21,78 @@
                 <button id="playButton" class="btn-primary">Play</button>
                 <button id="restartButton" class="btn-secondary">Restart (R)</button>
                 <div id="level-info">Level <span id="level-number">1</span></div>
+                <button id="helpButton" class="btn-help">Help (H)</button>
             </div>
             <div id="hint-box" class="hint">
                 <p id="hint-text">Drag surfaces to guide the ball to the star!</p>
+            </div>
+        </div>
+
+        <!-- Help Overlay -->
+        <div id="help-overlay" class="help-overlay hidden">
+            <div class="help-content">
+                <button id="close-help" class="close-help">&times;</button>
+                <h1>BounceFlow - Help</h1>
+
+                <div class="help-section">
+                    <h2>🎯 Goal</h2>
+                    <p>Guide the bouncing ball to collect all stars by positioning and rotating surfaces!</p>
+                </div>
+
+                <div class="help-section">
+                    <h2>⌨️ Keyboard Controls</h2>
+                    <div class="controls-grid">
+                        <div><kbd>Tab</kbd> Select next surface</div>
+                        <div><kbd>Q</kbd> / <kbd>E</kbd> Rotate surface left/right</div>
+                        <div><kbd>←</kbd> / <kbd>→</kbd> Rotate surface left/right</div>
+                        <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move surface</div>
+                        <div><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> Move surface</div>
+                        <div><kbd>Space</kbd> Start/Release ball</div>
+                        <div><kbd>R</kbd> Restart level</div>
+                        <div><kbd>H</kbd> Toggle this help</div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h2>🖱️ Mouse Controls</h2>
+                    <div class="controls-grid">
+                        <div><strong>Left-click + drag</strong> Move surface</div>
+                        <div><strong>Right-click + drag</strong> Rotate surface</div>
+                        <div><strong>Hover</strong> Highlight movable surfaces</div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h2>🎨 Visual Indicators</h2>
+                    <div class="controls-grid">
+                        <div><span class="color-demo" style="background: #FFE66D;"></span> <strong>Yellow</strong> = Selected (keyboard)</div>
+                        <div><span class="color-demo" style="background: #4ECDC4;"></span> <strong>Cyan</strong> = Active/Dragging</div>
+                        <div><span class="color-demo" style="background: #95E1D3;"></span> <strong>Light Cyan</strong> = Hovered</div>
+                        <div><span class="color-demo" style="background: #555;"></span> <strong>Gray</strong> = Locked (unmovable)</div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h2>⚡ The Physics</h2>
+                    <p>The <strong>Elasticity bar</strong> shows the ball's current bounciness:</p>
+                    <ul>
+                        <li><span style="color: #FF6B6B;">●</span> <strong>Red/Orange</strong> = Low bounce (ball won't bounce high)</li>
+                        <li><span style="color: #4ECDC4;">●</span> <strong>Cyan/Green</strong> = High bounce (ball bounces really high)</li>
+                    </ul>
+                    <p>In later levels, the ball's properties change over time - watch the color!</p>
+                </div>
+
+                <div class="help-section">
+                    <h2>💡 Tips</h2>
+                    <ul>
+                        <li>Surfaces are thicker than they look - collision detection is generous</li>
+                        <li>You can adjust surfaces while the ball is bouncing</li>
+                        <li>Try different angles - there are multiple solutions!</li>
+                        <li>Watch the elasticity bar in Level 2+ to time your moves</li>
+                    </ul>
+                </div>
+
+                <p class="help-footer">Press <kbd>H</kbd> or <kbd>Esc</kbd> to close</p>
             </div>
         </div>
     </div>
