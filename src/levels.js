@@ -9,7 +9,7 @@ export const LEVELS = [
         ballStart: { x: 150, y: 100 },
         surfaces: [
             { x: 200, y: 500, width: 300, angle: 0, locked: true },
-            { x: 500, y: 400, width: 150, angle: 30, locked: false }
+            { x: 500, y: 400, width: 250, angle: 30, locked: false }
         ],
         targets: [
             { x: 600, y: 200 }
