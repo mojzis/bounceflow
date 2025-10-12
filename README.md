@@ -2,6 +2,8 @@
 
 A physics-based puzzle game where kids learn through play. Guide a bouncing ball with dynamically changing properties by manipulating the environment.
 
+**[Play the game here!](https://mojzis.github.io/bounceflow/)**
+
 ## About
 
 BounceFlow is a passion project designed to teach kids physics principles through playful experimentation. The ball's properties (elasticity, weight, friction) change dynamically over time, creating evolving puzzles that adapt as you solve them.

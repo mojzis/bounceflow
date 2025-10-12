@@ -9,7 +9,11 @@
       "Bash(gh run watch:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nFix Matter.js import for production build\n\n- Change from default import to namespace import (import * as Matter)\n- Add optimizeDeps configuration for Matter.js in Vite\n- Add commonjsOptions to handle Matter.js properly\n\nFixes: Uncaught ReferenceError: Cannot access ''m'' before initialization\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Read(//home/jonas/Pictures/Screenshots/**)",
+      "Bash(npm run test:run:*)",
+      "Bash(find-skills solver AI learning)",
+      "Read(//home/jonas/.config/superpowers/skills/skills/collaboration/brainstorming/**)"
     ],
     "deny": [],
     "ask": []

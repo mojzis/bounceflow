@@ -440,3 +440,52 @@ kbd {
         font-size: 18px;
     }
 }
+
+/* Score Display */
+.score-display {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 15px 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    pointer-events: auto;
+}
+
+.score-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.score-label {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.score-value {
+    font-size: 18px;
+    color: #333;
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .score-display {
+        bottom: 80px;
+        padding: 12px 20px;
+        gap: 15px;
+    }
+
+    .score-value {
+        font-size: 16px;
+    }
+}

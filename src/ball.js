@@ -65,6 +65,16 @@ export class Ball {
     update(deltaTime) {
         if (!this.isActive) return;
 
+        // Validate physics body state - reset if corrupted
+        const pos = this.body.position;
+        const vel = this.body.velocity;
+        if (!isFinite(pos.x) || !isFinite(pos.y) || !isFinite(vel.x) || !isFinite(vel.y)) {
+            console.error('Ball physics corrupted! Resetting to safe state.');
+            const level = { ballStart: { x: 100, y: 100 } }; // Fallback position
+            this.reset(level.ballStart.x, level.ballStart.y);
+            return;
+        }
+
         // Update property based on pattern
         if (this.propertyPattern === 'wave') {
             this.elasticityPhase += this.cycleSpeed * deltaTime;
@@ -88,11 +98,12 @@ export class Ball {
         this.updateColor();
         this.updateTrail();
 
-        // Cap velocity to prevent crazy speeds
-        const maxVelocity = 20;
+        // Safety cap to prevent physics instability (very high limit)
+        const maxVelocity = 100;
         const velocity = this.body.velocity;
         const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
         if (speed > maxVelocity) {
+            console.warn(`Ball velocity too high (${speed.toFixed(1)}), capping to ${maxVelocity}`);
             const scale = maxVelocity / speed;
             Matter.Body.setVelocity(this.body, {
                 x: velocity.x * scale,
@@ -129,6 +140,12 @@ export class Ball {
 
     render(ctx) {
         const pos = this.body.position;
+
+        // Safety check: don't render if position is invalid
+        if (!isFinite(pos.x) || !isFinite(pos.y)) {
+            console.warn('Ball position is invalid (NaN or Infinity), skipping render');
+            return;
+        }
 
         // Draw trail
         if (this.isActive && this.trailPoints.length > 1) {

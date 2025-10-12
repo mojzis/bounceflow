@@ -41,7 +41,7 @@ export const LEVELS = [
             { x: 550, y: 350, width: 180, angle: -30, locked: false }
         ],
         targets: [
-            { x: 650, y: 320 }
+            { x: 650, y: 380 }
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
@@ -81,6 +81,98 @@ export const LEVELS = [
         propertyPattern: 'static',
         cycleSpeed: 0,
         hint: "Three stars! Master surface control to collect them all!"
+    },
+    {
+        id: 6,
+        name: "Obstacle Course",
+        ballStart: { x: 200, y: 100 },
+        surfaces: [
+            { x: 300, y: 300, width: 250, angle: 0, locked: true },  // Locked obstacle
+            { x: 400, y: 450, width: 200, angle: 30, locked: false },
+            { x: 600, y: 350, width: 180, angle: -20, locked: false }
+        ],
+        targets: [
+            { x: 700, y: 250 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Gray surfaces are locked - work around them!"
+    },
+    {
+        id: 7,
+        name: "Pinball",
+        ballStart: { x: 100, y: 150 },
+        surfaces: [
+            { x: 250, y: 400, width: 160, angle: 45, locked: false },
+            { x: 450, y: 450, width: 180, angle: -30, locked: true },
+            { x: 600, y: 350, width: 140, angle: 60, locked: false },
+            { x: 350, y: 250, width: 150, angle: -45, locked: true }
+        ],
+        targets: [
+            { x: 200, y: 250 },
+            { x: 700, y: 200 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Navigate through the pinball machine!"
+    },
+    {
+        id: 8,
+        name: "Narrow Gap",
+        ballStart: { x: 150, y: 100 },
+        surfaces: [
+            { x: 280, y: 350, width: 180, angle: 0, locked: true },
+            { x: 520, y: 350, width: 180, angle: 0, locked: true },
+            { x: 400, y: 450, width: 150, angle: 40, locked: false },
+            { x: 650, y: 250, width: 120, angle: -25, locked: false }
+        ],
+        targets: [
+            { x: 700, y: 180 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Thread the needle between the locked surfaces!"
+    },
+    {
+        id: 9,
+        name: "Chain Reaction",
+        ballStart: { x: 100, y: 100 },
+        surfaces: [
+            { x: 250, y: 450, width: 180, angle: 35, locked: false },
+            { x: 450, y: 380, width: 160, angle: -30, locked: false },
+            { x: 600, y: 300, width: 150, angle: 45, locked: false },
+            { x: 400, y: 200, width: 140, angle: -40, locked: false }
+        ],
+        targets: [
+            { x: 250, y: 150 },
+            { x: 550, y: 150 },
+            { x: 400, y: 80 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Create a perfect chain of bounces!"
+    },
+    {
+        id: 10,
+        name: "Grand Finale",
+        ballStart: { x: 400, y: 100 },
+        surfaces: [
+            { x: 280, y: 300, width: 180, angle: 0, locked: true },
+            { x: 520, y: 300, width: 180, angle: 0, locked: true },
+            { x: 200, y: 450, width: 180, angle: 50, locked: false },
+            { x: 400, y: 450, width: 150, angle: 0, locked: false },
+            { x: 600, y: 450, width: 180, angle: -50, locked: false },
+            { x: 350, y: 200, width: 120, angle: -30, locked: false }
+        ],
+        targets: [
+            { x: 150, y: 250 },
+            { x: 300, y: 250 },
+            { x: 650, y: 250 },
+            { x: 500, y: 130 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "The ultimate challenge - collect all four stars!"
     }
 ];
 
