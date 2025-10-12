@@ -12,6 +12,7 @@ import { PhysicsManager } from './game/PhysicsManager.js';
 import { InputManager } from './game/InputManager.js';
 import { SolverSystem } from './game/SolverSystem.js';
 import { RenderingSystem } from './game/RenderingSystem.js';
+import { UIManager } from './game/UIManager.js';
 
 export class Game {
     constructor(canvas) {
@@ -82,7 +83,26 @@ export class Game {
         this.renderer = new RenderingSystem(this);
 
         // UI elements
-        this.setupUI();
+        this.ui = new UIManager(this);
+        // Keep references for backward compatibility
+        this.playButton = this.ui.playButton;
+        this.dropButton = this.ui.dropButton;
+        this.restartButton = this.ui.restartButton;
+        this.levelDisplay = this.ui.levelDisplay;
+        this.levelName = this.ui.levelName;
+        this.hintText = this.ui.hintText;
+        this.elasticityFill = this.ui.elasticityFill;
+        this.helpOverlay = this.ui.helpOverlay;
+        this.helpButton = this.ui.helpButton;
+        this.hintButton = this.ui.hintButton;
+        this.refineButton = this.ui.refineButton;
+        this.closeHelpButton = this.ui.closeHelpButton;
+        this.victoryOverlay = this.ui.victoryOverlay;
+        this.victoryMessage = this.ui.victoryMessage;
+        this.replayButton = this.ui.replayButton;
+        this.scoreTime = this.ui.scoreTime;
+        this.scoreAttempts = this.ui.scoreAttempts;
+        this.scorePoints = this.ui.scorePoints;
 
         // Load first level
         this.loadLevel(this.currentLevel);
@@ -100,111 +120,6 @@ export class Game {
 
         // Register collision handler
         this.physics.onCollision((pairs) => this.handleCollisions(pairs));
-    }
-
-    setupUI() {
-        // Get UI elements
-        this.playButton = document.getElementById('playButton');
-        this.dropButton = document.getElementById('dropButton');
-        this.restartButton = document.getElementById('restartButton');
-        this.levelDisplay = document.getElementById('level-display');
-        this.levelName = document.getElementById('level-name');
-        this.hintText = document.getElementById('hint-text');
-        this.elasticityFill = document.getElementById('elasticity-fill');
-        this.helpOverlay = document.getElementById('help-overlay');
-        this.helpButton = document.getElementById('helpButton');
-        this.hintButton = document.getElementById('hintButton');
-        this.refineButton = document.getElementById('refineButton');
-        this.closeHelpButton = document.getElementById('close-help');
-        this.victoryOverlay = document.getElementById('victory-overlay');
-        this.victoryMessage = document.getElementById('victory-message');
-        this.replayButton = document.getElementById('replayButton');
-        this.scoreTime = document.getElementById('score-time');
-        this.scoreAttempts = document.getElementById('score-attempts');
-        this.scorePoints = document.getElementById('score-points');
-
-        // Button handlers
-        this.playButton.addEventListener('click', () => this.startPlay());
-        this.dropButton.addEventListener('click', () => this.dropBall());
-        this.restartButton.addEventListener('click', () => this.restart());
-        this.replayButton.addEventListener('click', () => this.startReplay());
-        this.hintButton.addEventListener('click', () => this.toggleHints());
-        this.refineButton.addEventListener('click', () => this.startRefineSolver());
-        this.helpButton.addEventListener('click', () => this.toggleHelp());
-        this.closeHelpButton.addEventListener('click', () => this.hideHelp());
-
-        // Click outside to close help
-        this.helpOverlay.addEventListener('click', (e) => {
-            if (e.target === this.helpOverlay) {
-                this.hideHelp();
-            }
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Help toggle
-            if (e.key === 'h' || e.key === 'H') {
-                this.toggleHelp();
-                e.preventDefault();
-                return;
-            } else if (e.key === 'Escape') {
-                this.hideHelp();
-                e.preventDefault();
-                return;
-            }
-
-            // Don't process other keys if help is showing
-            if (!this.helpOverlay.classList.contains('hidden')) {
-                return;
-            }
-
-            // Prevent key repeat for held keys - only start tracking on first press
-            const isMovementKey = ['w', 'W', 'a', 'A', 's', 'S', 'd', 'D', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'q', 'Q', 'e', 'E'].includes(e.key);
-
-            if (isMovementKey) {
-                if (!e.repeat && !this.input.heldKeys.has(e.key)) {
-                    // Start tracking this key
-                    this.input.trackKeyDown(e.key, e.shiftKey);
-                }
-                e.preventDefault();
-                return;
-            }
-
-            // Non-movement keys: process immediately
-            if (e.key === 'r' || e.key === 'R') {
-                this.restart();
-            } else if (e.key === ' ') {
-                if (this.currentState === this.states.MENU) {
-                    this.startPlay();
-                } else if (this.currentState === this.states.PLAYING) {
-                    this.dropBall();
-                }
-                e.preventDefault();
-            } else if (e.key === 'Tab') {
-                this.selectNextSurface();
-                e.preventDefault();
-            } else if (e.key === 'v' || e.key === 'V') {
-                // Toggle angle display
-                this.showAngles = !this.showAngles;
-                e.preventDefault();
-            } else if (e.key === '?' || e.key === '/') {
-                // Toggle solver (same as clicking button)
-                this.toggleHints();
-                e.preventDefault();
-            } else if (e.key === 'b' || e.key === 'B') {
-                // Toggle debug mode
-                this.debugMode = !this.debugMode;
-                console.log('Debug mode:', this.debugMode ? 'ON' : 'OFF');
-                e.preventDefault();
-            }
-        });
-
-        // Keyup handler to clear held keys
-        document.addEventListener('keyup', (e) => {
-            if (this.input.heldKeys.has(e.key)) {
-                this.input.trackKeyUp(e.key);
-            }
-        });
     }
 
     loadLevel(levelId) {
@@ -891,39 +806,7 @@ export class Game {
     }
 
     updateUI() {
-        if (this.ball) {
-            const ratio = this.ball.getElasticityRatio();
-            this.elasticityFill.style.width = `${ratio * 100}%`;
-            this.elasticityFill.style.background = this.ball.color;
-        }
-
-        // Update score display
-        this.scoreAttempts.textContent = this.attempts;
-
-        // Update time if playing
-        if (this.currentState === this.states.PLAYING && this.levelStartTime > 0) {
-            const currentTime = (Date.now() - this.levelStartTime) / 1000;
-            this.scoreTime.textContent = `${currentTime.toFixed(1)}s`;
-
-            // Calculate live score preview
-            const liveScore = this.calculateLiveScore(currentTime);
-            this.scorePoints.textContent = liveScore;
-
-            // Change color if solver was used
-            if (this.usedSolver) {
-                this.scorePoints.style.color = '#999';
-                this.scorePoints.textContent = 'N/A';
-            } else {
-                this.scorePoints.style.color = '#333';
-            }
-        } else if (this.currentState === this.states.MENU) {
-            // Reset to initial values when in menu
-            if (this.attempts === 0) {
-                this.scoreTime.textContent = '0s';
-                this.scorePoints.textContent = '1000';
-                this.scorePoints.style.color = '#333';
-            }
-        }
+        this.ui.updateUI();
     }
 
     calculateLiveScore(currentTime) {
