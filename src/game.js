@@ -33,6 +33,7 @@ export class Game {
         this.solverBestConfig = null;
         this.solverBestDistance = Infinity;
         this.solverCurrentAttempt = 0;
+        this.solverFoundSolution = false;
 
         // Replay recording
         this.isRecording = false;
@@ -233,6 +234,7 @@ export class Game {
         this.solverBestConfig = null;
         this.solverBestDistance = Infinity;
         this.solverCurrentAttempt = 0;
+        this.solverFoundSolution = false;
         this.showHints = false;
         this.hintButton.textContent = 'Show Hint (?)';
         this.hintButton.disabled = false;
@@ -355,6 +357,7 @@ export class Game {
         this.solverBestConfig = null;
         this.solverBestDistance = Infinity;
         this.solverCurrentAttempt = 0;
+        this.solverFoundSolution = false;
         this.showHints = false; // Clear visualization from previous run
 
         this.hintButton.textContent = 'Solving...';
@@ -412,6 +415,7 @@ export class Game {
         if (result.success) {
             console.log('✅ SOLUTION FOUND after', this.solverCurrentAttempt, 'attempts!');
             this.solverBestConfig = config;
+            this.solverFoundSolution = true;
             this.solverRunning = false;
             this.showHints = true;
             this.hintButton.textContent = `Solution Found! (${this.solverCurrentAttempt} attempts)`;
@@ -888,7 +892,7 @@ export class Game {
 
         // Draw solver status
         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.fillRect(10, this.canvas.height - 120, 250, 60);
+        ctx.fillRect(10, this.canvas.height - 120, 300, 60);
         ctx.fillStyle = '#4ECDC4';
         ctx.font = 'bold 14px sans-serif';
 
@@ -896,7 +900,13 @@ export class Game {
             const text = `🔬 Experimenting... (${this.solverCurrentAttempt} tries)`;
             ctx.fillText(text, 20, this.canvas.height - 95);
         } else if (this.solverBestConfig) {
-            ctx.fillText(`💡 Solution Shown`, 20, this.canvas.height - 95);
+            if (this.solverFoundSolution) {
+                ctx.fillStyle = '#4ECDC4';
+                ctx.fillText(`✅ Solution Found!`, 20, this.canvas.height - 95);
+            } else {
+                ctx.fillStyle = '#FF6B6B';
+                ctx.fillText(`❌ No Solution (best try shown)`, 20, this.canvas.height - 95);
+            }
         }
 
         // Show attempts count
