@@ -3,17 +3,17 @@
  */
 
 import * as Matter from 'matter-js';
-import { Ball } from './ball.js';
-import { Surface } from './surface.js';
-import { Target } from './target.js';
-import { Bird } from './bird.js';
-import { getLevel, getTotalLevels } from './levels.js';
-import { PhysicsManager } from './game/PhysicsManager.js';
-import { InputManager } from './game/InputManager.js';
-import { SolverSystem } from './game/SolverSystem.js';
-import { RenderingSystem } from './game/RenderingSystem.js';
-import { UIManager } from './game/UIManager.js';
-import { LevelManager } from './game/LevelManager.js';
+import { Ball } from '../ball.js';
+import { Surface } from '../surface.js';
+import { Target } from '../target.js';
+import { Bird } from '../bird.js';
+import { getLevel, getTotalLevels } from '../levels.js';
+import { PhysicsManager } from './PhysicsManager.js';
+import { InputManager } from './InputManager.js';
+import { SolverSystem } from './SolverSystem.js';
+import { RenderingSystem } from './RenderingSystem.js';
+import { UIManager } from './UIManager.js';
+import { LevelManager } from './LevelManager.js';
 
 export class Game {
     constructor(canvas) {

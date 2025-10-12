@@ -2,7 +2,7 @@
  * Entry point for BounceFlow prototype
  */
 
-import { Game } from './game.js';
+import { Game } from './game/index.js';
 
 // Initialize the game when DOM is loaded
 function init() {
