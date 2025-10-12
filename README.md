@@ -6,9 +6,8 @@ A physics-based puzzle game where kids learn through play. Guide a bouncing ball
 
 ## About
 
-BounceFlow is a passion project designed to teach kids physics principles through playful experimentation. The ball's properties (elasticity, weight, friction) change dynamically over time, creating evolving puzzles that adapt as you solve them.
-
-**Core Hook:** "What if the solution to a puzzle kept changing while you were solving it?"
+BounceFlow is a project designed to teach kids physics principles through playful experimentation. Eventually, the ball's properties (elasticity, weight, friction) might change dynamically over time, creating evolving puzzles that adapt as you solve them.
+This repository is a prototype to see how / whether kids enjoy it.
 
 ## Getting Started
 
@@ -48,13 +47,11 @@ npm run preview
 
 ## Current Prototype Features
 
-- ✅ Dynamic ball elasticity that changes over time
 - ✅ Interactive surfaces (drag and rotate)
-- ✅ 5 test levels with increasing difficulty
+- ✅ 15 test levels with increasing difficulty
 - ✅ Visual feedback for property changes (color, trails)
 - ✅ Target collection system
 - ✅ Touch controls for mobile
-- ✅ Responsive canvas
 
 ## Tech Stack
 
@@ -63,29 +60,8 @@ npm run preview
 - **Canvas API** - Rendering
 - **Vanilla JavaScript** - No framework overhead
 
-## Project Structure
 
-```
-bounceflow/
-├── src/
-│   ├── main.js           # Entry point
-│   ├── game.js           # Main game loop and state
-│   ├── ball.js           # Ball entity with dynamic properties
-│   ├── surface.js        # Interactive surface entities
-│   ├── target.js         # Goal/star collection
-│   ├── levels.js         # Level definitions
-│   ├── utils.js          # Utility functions
-│   └── styles/
-│       └── style.css     # UI styling
-├── index.html
-└── package.json
-```
 
-## Development Philosophy
-
-This game is built with love for kids to discover the joy of physics through play. No ads, no manipulative mechanics, no forced purchases - just pure learning through fun.
-
-**The best educational games are the ones kids don't realize are educational.**
 
 ## Next Steps
 
@@ -94,13 +70,8 @@ This game is built with love for kids to discover the joy of physics through pla
 - [ ] Add sound effects and music
 - [ ] Implement particle effects
 - [ ] Add proper menus and UI polish
-- [ ] Playtest with kids
-- [ ] Add "pay what you want" support option
-- [ ] Consider open sourcing
 
-## License
 
-This is a passion project for educational purposes. More details coming soon.
 
 ## Credits
 
