@@ -35,13 +35,13 @@ export const LEVELS = [
     {
         id: 3,
         name: "The Climb",
-        ballStart: { x: 100, y: 450 },
+        ballStart: { x: 100, y: 400 },
         surfaces: [
-            { x: 350, y: 400, width: 200, angle: 45, locked: false },
-            { x: 550, y: 300, width: 180, angle: -30, locked: false }
+            { x: 350, y: 420, width: 200, angle: 45, locked: false },
+            { x: 550, y: 350, width: 180, angle: -30, locked: false }
         ],
         targets: [
-            { x: 650, y: 280 }
+            { x: 650, y: 320 }
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
