@@ -336,12 +336,19 @@ export class Game {
     }
 
     startSolver() {
+        console.log('🚀 Starting solver...');
         this.solverRunning = true;
         this.solverAttempts = [];
         this.solverBestConfig = null;
         this.solverCurrentAttempt = 0;
         this.hintButton.textContent = 'Solving...';
         this.hintButton.disabled = true;
+
+        console.log('Solver state:', {
+            running: this.solverRunning,
+            attempts: this.solverAttempts.length,
+            currentAttempt: this.solverCurrentAttempt
+        });
 
         // Start solver loop
         this.runSolverStep();
@@ -356,26 +363,38 @@ export class Game {
     runSolverStep() {
         if (!this.solverRunning) return;
 
-        const level = getLevel(this.currentLevel);
+        let config, result;
+        try {
+            const level = getLevel(this.currentLevel);
 
-        // Generate a random configuration based on initial setup
-        const config = this.generateRandomConfig(level);
+            // Generate a random configuration based on initial setup
+            config = this.generateRandomConfig(level);
+            console.log('Solver attempt', this.solverCurrentAttempt + 1, 'config:', config);
 
-        // Simulate physics with this configuration
-        const result = this.simulateConfiguration(config, level);
+            // Simulate physics with this configuration
+            result = this.simulateConfiguration(config, level);
+            console.log('Result:', result.success ? 'SUCCESS!' : 'failed', 'closest distance:', result.closestDistance.toFixed(1));
 
-        // Store attempt
-        this.solverAttempts.push({
-            config: config,
-            trajectory: result.trajectory,
-            success: result.success,
-            closestDistance: result.closestDistance
-        });
+            // Store attempt
+            this.solverAttempts.push({
+                config: config,
+                trajectory: result.trajectory,
+                success: result.success,
+                closestDistance: result.closestDistance
+            });
 
-        this.solverCurrentAttempt++;
+            this.solverCurrentAttempt++;
+        } catch (error) {
+            console.error('Solver error:', error);
+            this.stopSolver();
+            this.hintButton.textContent = 'Solver Error';
+            alert('Solver encountered an error. Check browser console for details.');
+            return;
+        }
 
         // Check if we found a solution
         if (result.success) {
+            console.log('✅ SOLUTION FOUND after', this.solverCurrentAttempt, 'attempts!');
             this.solverBestConfig = config;
             this.solverRunning = false;
             this.showHints = true;
@@ -835,9 +854,16 @@ export class Game {
         ctx.font = 'bold 14px sans-serif';
 
         if (this.solverRunning) {
-            ctx.fillText(`🔬 Experimenting... (${this.solverCurrentAttempt} tries)`, 20, this.canvas.height - 95);
+            const text = `🔬 Experimenting... (${this.solverCurrentAttempt} tries)`;
+            console.log('Rendering solver status:', text);
+            ctx.fillText(text, 20, this.canvas.height - 95);
         } else if (this.solverBestConfig) {
             ctx.fillText(`💡 Solution Shown`, 20, this.canvas.height - 95);
+        } else {
+            // Debug: show if we get here
+            console.log('renderHints called but no status to show');
+            ctx.fillStyle = 'white';
+            ctx.fillText('Initializing...', 20, this.canvas.height - 95);
         }
 
         // Show attempts count
