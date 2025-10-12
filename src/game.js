@@ -928,10 +928,11 @@ export class Game {
             this.hookReleasing = true;
             this.hookReleaseProgress = 0;
 
-            // Calculate hook swing velocity to transfer to ball
+            // Calculate hook swing velocity to transfer to ball (only for levels with swinging)
             // Sway is: Math.sin(Date.now() / 800) * 10
             // Velocity is derivative: cos(t/800) * (10/800) * 1000 = cos(t/800) * 12.5
-            const swayVelocity = Math.cos(Date.now() / 800) * 12.5;
+            const hasSwinging = this.currentLevel >= 4;
+            const swayVelocity = hasSwinging ? Math.cos(Date.now() / 800) * 12.5 : 0;
 
             // Delay ball activation for hook animation
             setTimeout(() => {
@@ -939,7 +940,7 @@ export class Game {
 
                 // Transfer swing momentum to ball (horizontal velocity)
                 Matter.Body.setVelocity(this.ball.body, {
-                    x: swayVelocity * 0.15, // Scale down for gameplay feel
+                    x: swayVelocity * 0.15, // Scale down for gameplay feel (0 for early levels)
                     y: 0
                 });
 
@@ -1208,8 +1209,22 @@ export class Game {
         }
 
         // Update hook sway (idle animation)
-        if (this.currentState === this.states.MENU) {
+        // Introduce swinging mechanic starting from level 4
+        if (this.currentState === this.states.MENU && this.currentLevel >= 4) {
             this.hookSwayOffset = Math.sin(Date.now() / 800) * 10; // Gentle sway
+
+            // Move ball with the hook sway
+            if (this.ball) {
+                const level = getLevel(this.currentLevel);
+                const swayX = level.ballStart.x + this.hookSwayOffset;
+                Matter.Body.setPosition(this.ball.body, {
+                    x: swayX,
+                    y: level.ballStart.y
+                });
+            }
+        } else if (this.currentState === this.states.MENU) {
+            // Keep ball and hook static for early levels
+            this.hookSwayOffset = 0;
         }
 
         // Update entities
