@@ -80,6 +80,7 @@ export class Game {
     setupUI() {
         // Get UI elements
         this.playButton = document.getElementById('playButton');
+        this.dropButton = document.getElementById('dropButton');
         this.restartButton = document.getElementById('restartButton');
         this.levelNumber = document.getElementById('level-number');
         this.hintText = document.getElementById('hint-text');
@@ -123,6 +124,9 @@ export class Game {
 
             if (e.key === 'r' || e.key === 'R') {
                 this.restart();
+            } else if (e.key === 'd' || e.key === 'D') {
+                this.dropBall();
+                e.preventDefault();
             } else if (e.key === ' ' && this.currentState === this.states.MENU) {
                 this.startPlay();
                 e.preventDefault();
@@ -279,6 +283,16 @@ export class Game {
             target.collected = false;
             target.particles = [];
         });
+    }
+
+    dropBall() {
+        // Only works if ball is active
+        if (this.currentState !== this.states.PLAYING) return;
+
+        const level = getLevel(this.currentLevel);
+        this.ball.reset(level.ballStart.x, level.ballStart.y);
+        this.ball.activate();
+        this.attempts++;
     }
 
     nextLevel() {
