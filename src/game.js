@@ -135,7 +135,8 @@ export class Game {
         this.playButton = document.getElementById('playButton');
         this.dropButton = document.getElementById('dropButton');
         this.restartButton = document.getElementById('restartButton');
-        this.levelNumber = document.getElementById('level-number');
+        this.levelDisplay = document.getElementById('level-display');
+        this.levelName = document.getElementById('level-name');
         this.hintText = document.getElementById('hint-text');
         this.elasticityFill = document.getElementById('elasticity-fill');
         this.helpOverlay = document.getElementById('help-overlay');
@@ -286,7 +287,8 @@ export class Game {
         this.refineButton.disabled = false;
 
         // Update UI
-        this.levelNumber.textContent = levelId;
+        this.levelDisplay.textContent = `Level ${levelId}`;
+        this.levelName.textContent = level.name;
         this.hintText.textContent = level.hint;
 
         // Create ball
