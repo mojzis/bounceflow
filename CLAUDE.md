@@ -98,6 +98,32 @@ The game follows a **manager-based architecture** where the main Game class acts
 - Randomizes target positions (±30px)
 - Resets solver and replay state
 
+**`game/StateController.js`** (~150 lines)
+- Manages game state transitions with automatic cleanup
+- Enforces cleanup before every state transition
+- Provides safe recovery to MENU state on errors
+- States: MENU (adjusting), PLAYING (active), WON (victory), REPLAY (playback)
+- Prevents invalid state combinations (e.g., solver hints showing in wrong states)
+
+### State Management
+
+The game uses a **StateController** to manage state transitions:
+
+- **Single Source of Truth**: `StateController.state` is authoritative
+- **Automatic Cleanup**: `cleanup()` runs before every state transition
+  - Stops solver if running
+  - Clears victory timers
+  - Resets UI flags (showHints, hookReleasing)
+  - State-specific cleanup (recording, overlays, etc.)
+- **Safe Recovery**: `recover()` forces return to MENU on any error
+  - Handles corrupted ball states
+  - Recovers from update loop errors
+  - Recovers from solver errors
+- **States**: MENU (adjusting), PLAYING (active), WON (victory), REPLAY (playback)
+
+**Why StateController?**
+Previous implementation used scattered boolean flags that could get into invalid combinations (e.g., solver hints showing in wrong state, victory timers not cancelled during replay). StateController prevents these issues by enforcing cleanup before every transition.
+
 ### Entity Classes (src/)
 
 **`ball.js`** - Ball entity with dynamic properties
@@ -231,7 +257,8 @@ src/
 │   ├── SolverSystem.js        # AI solver with simulated annealing (~400 lines)
 │   ├── RenderingSystem.js     # All rendering logic (~660 lines)
 │   ├── UIManager.js           # DOM elements and keyboard shortcuts (~145 lines)
-│   └── LevelManager.js        # Level loading and progression (~170 lines)
+│   ├── LevelManager.js        # Level loading and progression (~170 lines)
+│   └── StateController.js     # State transitions, cleanup, recovery (~150 lines)
 ├── ball.js                    # Ball entity with dynamic elasticity
 ├── surface.js                 # Interactive surface entity
 ├── target.js                  # Star collection targets
