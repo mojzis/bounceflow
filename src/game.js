@@ -160,23 +160,46 @@ export class Game {
             } else if (e.key === 'Tab') {
                 this.selectNextSurface();
                 e.preventDefault();
-            } else if (e.key === 'q' || e.key === 'Q' || e.key === 'ArrowLeft') {
-                this.rotateSelectedSurface(-5);
+            } else if (e.key === 'q' || e.key === 'Q') {
+                // Shift for coarse (5°), normal for fine (1°)
+                const rotateAmount = e.shiftKey ? -5 : -1;
+                this.rotateSelectedSurface(rotateAmount);
                 e.preventDefault();
-            } else if (e.key === 'e' || e.key === 'E' || e.key === 'ArrowRight') {
-                this.rotateSelectedSurface(5);
+            } else if (e.key === 'e' || e.key === 'E') {
+                const rotateAmount = e.shiftKey ? 5 : 1;
+                this.rotateSelectedSurface(rotateAmount);
                 e.preventDefault();
-            } else if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
-                this.moveSelectedSurface(0, -5);
+            } else if (e.key === 'ArrowLeft') {
+                const rotateAmount = e.shiftKey ? -5 : -1;
+                this.rotateSelectedSurface(rotateAmount);
                 e.preventDefault();
-            } else if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') {
-                this.moveSelectedSurface(0, 5);
+            } else if (e.key === 'ArrowRight') {
+                const rotateAmount = e.shiftKey ? 5 : 1;
+                this.rotateSelectedSurface(rotateAmount);
+                e.preventDefault();
+            } else if (e.key === 'w' || e.key === 'W') {
+                const moveAmount = e.shiftKey ? -5 : -1;
+                this.moveSelectedSurface(0, moveAmount);
+                e.preventDefault();
+            } else if (e.key === 's' || e.key === 'S') {
+                const moveAmount = e.shiftKey ? 5 : 1;
+                this.moveSelectedSurface(0, moveAmount);
+                e.preventDefault();
+            } else if (e.key === 'ArrowUp') {
+                const moveAmount = e.shiftKey ? -5 : -1;
+                this.moveSelectedSurface(0, moveAmount);
+                e.preventDefault();
+            } else if (e.key === 'ArrowDown') {
+                const moveAmount = e.shiftKey ? 5 : 1;
+                this.moveSelectedSurface(0, moveAmount);
                 e.preventDefault();
             } else if (e.key === 'a' || e.key === 'A') {
-                this.moveSelectedSurface(-5, 0);
+                const moveAmount = e.shiftKey ? -5 : -1;
+                this.moveSelectedSurface(moveAmount, 0);
                 e.preventDefault();
             } else if (e.key === 'd' || e.key === 'D') {
-                this.moveSelectedSurface(5, 0);
+                const moveAmount = e.shiftKey ? 5 : 1;
+                this.moveSelectedSurface(moveAmount, 0);
                 e.preventDefault();
             } else if (e.key === 'v' || e.key === 'V') {
                 // Toggle angle display
