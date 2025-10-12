@@ -319,55 +319,54 @@ export class Game {
             this.hookReleasing = true;
             this.hookReleaseProgress = 0;
 
-            // Calculate hook swing velocity to transfer to ball (only for levels with swinging)
-            // Sway is: Math.sin(Date.now() / 800) * 10
-            // Velocity is derivative: cos(t/800) * (10/800) * 1000 = cos(t/800) * 12.5
+            // Calculate hook swing velocity to transfer to ball
             const hasSwinging = this.currentLevel >= 4;
             const swayVelocity = hasSwinging ? Math.cos(Date.now() / 800) * 12.5 : 0;
 
             // Delay ball activation for hook animation
             setTimeout(() => {
-                this.ball.activate();
+                try {
+                    this.ball.activate();
 
-                // Transfer swing momentum to ball (horizontal velocity)
-                Matter.Body.setVelocity(this.ball.body, {
-                    x: swayVelocity * 0.15, // Scale down for gameplay feel (0 for early levels)
-                    y: 0
-                });
+                    // Transfer swing momentum to ball
+                    Matter.Body.setVelocity(this.ball.body, {
+                        x: swayVelocity * 0.15,
+                        y: 0
+                    });
 
-                this.currentState = this.states.PLAYING;
-                this.hookReleasing = false;
-            }, 300); // 300ms animation
+                    // Use StateController for transition
+                    this.stateController.transitionTo('PLAYING');
+                    this.hookReleasing = false;
+
+                } catch (error) {
+                    console.error('Failed to start playing:', error);
+                    this.stateController.recover();
+                }
+            }, 300);
 
             this.attempts++;
-            this.playButton.textContent = 'Playing...';
-            this.playButton.disabled = true;
 
             // Start time tracking on first attempt
             if (this.attempts === 1) {
                 this.levelStartTime = Date.now();
             }
-
-            // Start recording for replay
-            this.replayData = [];
-            this.collisionData = [];
-            this.isRecording = true;
-            this.replayButton.style.display = 'none';
         }
     }
 
     restart() {
         const level = getLevel(this.currentLevel);
-        this.ball.reset(level.ballStart.x, level.ballStart.y);
-        this.currentState = this.states.MENU;
-        this.playButton.textContent = 'Play';
-        this.playButton.disabled = false;
-        this.isRecording = false;
+        if (this.ball && level) {
+            this.ball.reset(level.ballStart.x, level.ballStart.y);
+        }
 
-        // Reset hook animation
-        this.hookReleasing = false;
-        this.hookReleaseProgress = 0;
-        this.hookSwayOffset = 0;
+        // StateController handles cleanup
+        this.stateController.transitionTo('MENU');
+
+        // Reset targets
+        this.targets.forEach(target => {
+            target.collected = false;
+            target.particles = [];
+        });
 
         // Reset bird
         if (this.bird) {
@@ -377,17 +376,9 @@ export class Game {
         }
 
         // Show replay button if we have data
-        console.log('Restart: replay data length =', this.replayData.length);
         if (this.replayData.length > 0) {
             this.replayButton.style.display = 'block';
-            console.log('Replay button shown');
         }
-
-        // Reset targets
-        this.targets.forEach(target => {
-            target.collected = false;
-            target.particles = [];
-        });
     }
 
     dropBall() {
@@ -410,46 +401,27 @@ export class Game {
             return;
         }
 
-        // CRITICAL: Cancel victory screen auto-advance timers
-        if (this.victoryHideTimer) {
-            clearTimeout(this.victoryHideTimer);
-            this.victoryHideTimer = null;
-        }
-        if (this.victoryAdvanceTimer) {
-            clearTimeout(this.victoryAdvanceTimer);
-            this.victoryAdvanceTimer = null;
-            console.log('✅ Cancelled auto-advance to next level');
-        }
-
         // Ensure we're not in a bad state
         if (this.currentState === this.states.PLAYING) {
             console.log('Stopping active game before replay');
             this.restart();
         }
 
-        this.currentState = this.states.REPLAY;
-        this.replayIndex = 0;
-        this.playButton.textContent = 'Exit Replay';
-        this.playButton.disabled = false;
-        this.replayButton.style.display = 'none';
+        // StateController handles cleanup including victory timers
+        this.stateController.transitionTo('REPLAY');
 
         // Reset ball to start
         const level = getLevel(this.currentLevel);
-        if (this.ball) {
+        if (this.ball && level) {
             this.ball.reset(level.ballStart.x, level.ballStart.y);
         }
     }
 
     stopReplay() {
         console.log('Stopping replay, returning to MENU');
-        this.currentState = this.states.MENU;
-        this.playButton.textContent = 'Play';
-        this.playButton.disabled = false;
 
-        // Only show replay button if we have data for current level
-        if (this.replayData.length > 0) {
-            this.replayButton.style.display = 'block';
-        }
+        // StateController handles transition
+        this.stateController.transitionTo('MENU');
 
         const level = getLevel(this.currentLevel);
         if (this.ball && level) {
@@ -466,11 +438,12 @@ export class Game {
 
         const allCollected = this.targets.every(target => target.collected);
         if (allCollected && this.targets.length > 0) {
-            this.currentState = this.states.WON;
+            // Use StateController for transition
+            this.stateController.transitionTo('WON');
 
             // Calculate final time
             if (this.levelStartTime > 0) {
-                this.levelTime = (Date.now() - this.levelStartTime) / 1000; // Convert to seconds
+                this.levelTime = (Date.now() - this.levelStartTime) / 1000;
             }
 
             // Calculate score
