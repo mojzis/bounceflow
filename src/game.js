@@ -87,6 +87,8 @@ export class Game {
         this.helpOverlay = document.getElementById('help-overlay');
         this.helpButton = document.getElementById('helpButton');
         this.closeHelpButton = document.getElementById('close-help');
+        this.victoryOverlay = document.getElementById('victory-overlay');
+        this.victoryMessage = document.getElementById('victory-message');
 
         // Button handlers
         this.playButton.addEventListener('click', () => this.startPlay());
@@ -302,12 +304,21 @@ export class Game {
     }
 
     showVictory() {
-        alert(`Level ${this.currentLevel} Complete!\n\nAttempts: ${this.attempts}\n\nPress OK for next level`);
-        this.nextLevel();
+        this.victoryMessage.textContent = `Attempts: ${this.attempts}`;
+        this.victoryOverlay.classList.remove('hidden');
+
+        // Auto-advance to next level after 2 seconds
+        setTimeout(() => {
+            this.victoryOverlay.classList.add('hidden');
+            this.nextLevel();
+        }, 2000);
     }
 
     showGameComplete() {
-        alert('Congratulations! You completed all levels!');
+        this.victoryMessage.textContent = `All ${getTotalLevels()} levels complete!`;
+        this.victoryOverlay.querySelector('h1').textContent = '🏆 Congratulations!';
+        this.victoryOverlay.querySelector('.victory-footer').textContent = 'You beat the game!';
+        this.victoryOverlay.classList.remove('hidden');
     }
 
     update(deltaTime) {
