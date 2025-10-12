@@ -93,6 +93,7 @@ export class Game {
 
         // Button handlers
         this.playButton.addEventListener('click', () => this.startPlay());
+        this.dropButton.addEventListener('click', () => this.dropBall());
         this.restartButton.addEventListener('click', () => this.restart());
         this.helpButton.addEventListener('click', () => this.toggleHelp());
         this.closeHelpButton.addEventListener('click', () => this.hideHelp());
@@ -124,11 +125,12 @@ export class Game {
 
             if (e.key === 'r' || e.key === 'R') {
                 this.restart();
-            } else if (e.key === 'd' || e.key === 'D') {
-                this.dropBall();
-                e.preventDefault();
-            } else if (e.key === ' ' && this.currentState === this.states.MENU) {
-                this.startPlay();
+            } else if (e.key === ' ') {
+                if (this.currentState === this.states.MENU) {
+                    this.startPlay();
+                } else if (this.currentState === this.states.PLAYING) {
+                    this.dropBall();
+                }
                 e.preventDefault();
             } else if (e.key === 'Tab') {
                 this.selectNextSurface();
