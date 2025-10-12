@@ -24,6 +24,7 @@ export class Game {
         this.currentState = this.states.MENU;
         this.currentLevel = 1;
         this.attempts = 0;
+        this.showAngles = false; // Toggle for showing surface angles
 
         // Replay recording
         this.isRecording = false;
@@ -167,6 +168,10 @@ export class Game {
                 e.preventDefault();
             } else if (e.key === 'd' || e.key === 'D') {
                 this.moveSelectedSurface(5, 0);
+                e.preventDefault();
+            } else if (e.key === 'v' || e.key === 'V') {
+                // Toggle angle display
+                this.showAngles = !this.showAngles;
                 e.preventDefault();
             }
         });
@@ -531,12 +536,22 @@ export class Game {
         this.ctx.fillStyle = gradient;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Render surfaces (show angles in replay mode)
+        // Render surfaces (show angles in replay mode or if toggled on)
         const isReplay = this.currentState === this.states.REPLAY;
-        this.surfaces.forEach(surface => surface.render(this.ctx, isReplay));
+        const displayAngles = isReplay || this.showAngles;
+        this.surfaces.forEach(surface => surface.render(this.ctx, displayAngles));
 
         // Render targets
         this.targets.forEach(target => target.render(this.ctx));
+
+        // Show angle toggle indicator
+        if (this.showAngles && !isReplay) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillRect(10, this.canvas.height - 50, 150, 40);
+            this.ctx.fillStyle = '#FFE66D';
+            this.ctx.font = 'bold 14px sans-serif';
+            this.ctx.fillText('Angles: ON (V)', 20, this.canvas.height - 25);
+        }
 
         // Render replay mode
         if (this.currentState === this.states.REPLAY) {

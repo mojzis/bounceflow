@@ -39,7 +39,7 @@ body {
 #property-indicator {
     position: absolute;
     top: 20px;
-    left: 20px;
+    right: 20px;
     background: rgba(255, 255, 255, 0.95);
     padding: 15px 20px;
     border-radius: 12px;
@@ -73,7 +73,7 @@ body {
 
 #controls {
     position: absolute;
-    top: 20px;
+    top: 120px;
     right: 20px;
     display: flex;
     flex-direction: column;
@@ -163,7 +163,7 @@ button {
 @media (max-width: 768px) {
     #property-indicator {
         top: 10px;
-        left: 10px;
+        right: 10px;
         padding: 10px 15px;
         min-width: 180px;
     }
@@ -174,7 +174,7 @@ button {
     }
 
     #controls {
-        top: 10px;
+        top: 90px;
         right: 10px;
         gap: 8px;
     }
