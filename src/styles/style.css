@@ -126,6 +126,16 @@ button {
     font-size: 14px;
     font-weight: 600;
     color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.level-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: #667eea;
 }
 
 .btn-help {
