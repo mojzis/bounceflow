@@ -749,9 +749,16 @@ export class Game {
             const angleVar = (Math.random() - 0.5) * angleVariation * 2;
 
             // Apply error bias (learning from failures)
-            const finalX = baseX + xVar + errorBiasX;
-            const finalY = baseY + yVar + errorBiasY;
+            let finalX = baseX + xVar + errorBiasX;
+            let finalY = baseY + yVar + errorBiasY;
             const finalAngle = baseAngle + angleVar;
+
+            // CONSTRAINT: First surface must stay at or below ball (gravity pulls down)
+            if (this.solverMode === 'explore' && index === 0) {
+                const ballY = level.ballStart.y;
+                // Allow surface to be at most 20px above ball (for shallow catches)
+                finalY = Math.max(ballY - 20, finalY);
+            }
 
             return {
                 x: finalX,
