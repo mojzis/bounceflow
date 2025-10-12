@@ -37,12 +37,11 @@ export const LEVELS = [
         name: "The Climb",
         ballStart: { x: 100, y: 450 },
         surfaces: [
-            { x: 150, y: 550, width: 250, angle: 0, locked: true },
             { x: 350, y: 400, width: 200, angle: 45, locked: false },
-            { x: 550, y: 250, width: 180, angle: -30, locked: false }
+            { x: 550, y: 300, width: 180, angle: -30, locked: false }
         ],
         targets: [
-            { x: 650, y: 100 }
+            { x: 650, y: 200 }
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
@@ -70,15 +69,14 @@ export const LEVELS = [
         name: "Triple Challenge",
         ballStart: { x: 100, y: 200 },
         surfaces: [
-            { x: 150, y: 550, width: 200, angle: 0, locked: true },
             { x: 350, y: 450, width: 180, angle: 20, locked: false },
             { x: 550, y: 380, width: 160, angle: -25, locked: false },
-            { x: 400, y: 250, width: 140, angle: 45, locked: false }
+            { x: 400, y: 300, width: 140, angle: 45, locked: false }
         ],
         targets: [
-            { x: 300, y: 150 },
-            { x: 600, y: 150 },
-            { x: 450, y: 80 }
+            { x: 300, y: 250 },
+            { x: 600, y: 250 },
+            { x: 450, y: 180 }
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,

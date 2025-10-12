@@ -188,9 +188,12 @@ export class Game {
             this.surfaces.push(surface);
         });
 
-        // Create targets
+        // Create targets with slight randomization
         level.targets.forEach(targetData => {
-            const target = new Target(targetData.x, targetData.y);
+            // Add random offset: +/- 30 pixels in each direction
+            const randomX = targetData.x + (Math.random() - 0.5) * 60;
+            const randomY = targetData.y + (Math.random() - 0.5) * 60;
+            const target = new Target(randomX, randomY);
             this.targets.push(target);
         });
 
