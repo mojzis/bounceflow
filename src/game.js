@@ -401,8 +401,8 @@ export class Game {
             return;
         }
 
-        // Continue in next frame
-        setTimeout(() => this.runSolverStep(), 50);
+        // Continue in next frame (slower for visibility)
+        setTimeout(() => this.runSolverStep(), 100);
     }
 
     generateRandomConfig(level) {
@@ -825,11 +825,12 @@ export class Game {
             ctx.fillText(`Failed: ${this.solverAttempts.filter(a => !a.success).length}`, 20, this.canvas.height - 75);
         }
 
-        // Draw last 10 failed attempts as faint trajectories
-        const failedAttempts = this.solverAttempts.filter(a => !a.success).slice(-10);
+        // Draw last 20 failed attempts as visible trajectories
+        const failedAttempts = this.solverAttempts.filter(a => !a.success).slice(-20);
         failedAttempts.forEach((attempt, index) => {
-            ctx.strokeStyle = `rgba(255, 100, 100, ${0.1 + (index / 10) * 0.2})`;
-            ctx.lineWidth = 1;
+            // More visible - opacity from 0.2 to 0.5
+            ctx.strokeStyle = `rgba(255, 100, 100, ${0.2 + (index / 20) * 0.3})`;
+            ctx.lineWidth = 2;
             ctx.beginPath();
 
             attempt.trajectory.forEach((point, i) => {
@@ -841,6 +842,55 @@ export class Game {
             });
             ctx.stroke();
         });
+
+        // Draw current attempt being tested (if solver is running)
+        if (this.solverRunning && this.solverAttempts.length > 0) {
+            const currentAttempt = this.solverAttempts[this.solverAttempts.length - 1];
+
+            // Show surfaces being tested
+            const level = getLevel(this.currentLevel);
+            currentAttempt.config.forEach((configSurface, index) => {
+                if (configSurface.locked) return;
+
+                const angleRad = (configSurface.angle * Math.PI) / 180;
+                const halfWidth = configSurface.width / 2;
+
+                const x1 = configSurface.x - Math.cos(angleRad) * halfWidth;
+                const y1 = configSurface.y - Math.sin(angleRad) * halfWidth;
+                const x2 = configSurface.x + Math.cos(angleRad) * halfWidth;
+                const y2 = configSurface.y + Math.sin(angleRad) * halfWidth;
+
+                // Draw testing surface
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255, 200, 100, 0.4)';
+                ctx.lineWidth = 18;
+                ctx.setLineDash([5, 5]);
+                ctx.lineCap = 'round';
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                ctx.restore();
+            });
+
+            // Show trajectory
+            ctx.strokeStyle = 'rgba(255, 200, 100, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+
+            currentAttempt.trajectory.forEach((point, i) => {
+                if (i === 0) {
+                    ctx.moveTo(point.x, point.y);
+                } else {
+                    ctx.lineTo(point.x, point.y);
+                }
+            });
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
 
         // Draw best/successful configuration if found
         if (this.solverBestConfig && this.showHints) {
