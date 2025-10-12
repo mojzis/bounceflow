@@ -305,8 +305,10 @@ export class Game {
         this.isRecording = false;
 
         // Show replay button if we have data
+        console.log('Restart: replay data length =', this.replayData.length);
         if (this.replayData.length > 0) {
             this.replayButton.style.display = 'block';
+            console.log('Replay button shown');
         }
 
         // Reset targets
@@ -377,10 +379,17 @@ export class Game {
     showVictory() {
         this.victoryMessage.textContent = `Attempts: ${this.attempts}`;
         this.victoryOverlay.classList.remove('hidden');
+        this.isRecording = false;
+
+        // Show replay button for completed level
+        if (this.replayData.length > 0) {
+            this.replayButton.style.display = 'block';
+        }
 
         // Auto-advance to next level after 2 seconds
         setTimeout(() => {
             this.victoryOverlay.classList.add('hidden');
+            this.replayButton.style.display = 'none'; // Hide when moving to next level
             this.nextLevel();
         }, 2000);
     }
