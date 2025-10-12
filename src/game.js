@@ -13,6 +13,7 @@ import { InputManager } from './game/InputManager.js';
 import { SolverSystem } from './game/SolverSystem.js';
 import { RenderingSystem } from './game/RenderingSystem.js';
 import { UIManager } from './game/UIManager.js';
+import { LevelManager } from './game/LevelManager.js';
 
 export class Game {
     constructor(canvas) {
@@ -104,6 +105,9 @@ export class Game {
         this.scoreAttempts = this.ui.scoreAttempts;
         this.scorePoints = this.ui.scorePoints;
 
+        // Level management
+        this.levelManager = new LevelManager(this);
+
         // Load first level
         this.loadLevel(this.currentLevel);
 
@@ -123,144 +127,11 @@ export class Game {
     }
 
     loadLevel(levelId) {
-        const level = getLevel(levelId);
-        if (!level) {
-            console.error(`Level ${levelId} not found`);
-            return;
-        }
-
-        // CRITICAL: Stop any running solver before clearing
-        if (this.solver.running) {
-            this.stopSolver();
-        }
-
-        // CRITICAL: Clear victory timers when loading new level
-        if (this.victoryHideTimer) {
-            clearTimeout(this.victoryHideTimer);
-            this.victoryHideTimer = null;
-        }
-        if (this.victoryAdvanceTimer) {
-            clearTimeout(this.victoryAdvanceTimer);
-            this.victoryAdvanceTimer = null;
-        }
-
-        // Clear existing entities
-        this.clearLevel();
-
-        // CRITICAL: Clear replay data from previous level
-        this.replayData = [];
-        this.collisionData = [];
-        this.isRecording = false;
-        this.replayIndex = 0;
-        this.replayButton.style.display = 'none';
-
-        // Clear solver state (reset SolverSystem instance)
-        this.solver = new SolverSystem(this);
-        this.solverMode = 'explore';
-        this.solverUserConfig = null;
-        this.showHints = false;
-        this.hintButton.textContent = 'Show Hint (?)';
-        this.hintButton.disabled = false;
-        this.refineButton.textContent = 'Refine My Setup';
-        this.refineButton.disabled = false;
-
-        // Update UI
-        this.levelDisplay.textContent = `Level ${levelId}`;
-        this.levelName.textContent = level.name;
-        this.hintText.textContent = level.hint;
-
-        // Create ball
-        this.ball = new Ball(level.ballStart.x, level.ballStart.y, 20, this.world);
-        this.ball.setPropertyPattern(level.propertyPattern, level.cycleSpeed);
-
-        // Create surfaces
-        level.surfaces.forEach(surfaceData => {
-            const surface = new Surface(
-                surfaceData.x,
-                surfaceData.y,
-                surfaceData.width,
-                surfaceData.angle,
-                surfaceData.locked,
-                this.world
-            );
-            this.surfaces.push(surface);
-        });
-
-        // Create targets with slight randomization, ensuring they don't overlap
-        level.targets.forEach(targetData => {
-            const targetRadius = 25; // From target.js
-            const minDistance = targetRadius * 2 + 10; // Targets must be at least 60px apart
-            const maxAttempts = 10;
-            let randomX, randomY, validPosition, attempts = 0;
-
-            do {
-                // Add random offset: +/- 30 pixels in each direction
-                randomX = targetData.x + (Math.random() - 0.5) * 60;
-                randomY = targetData.y + (Math.random() - 0.5) * 60;
-
-                // Check if this position overlaps with existing targets
-                validPosition = true;
-                for (const existingTarget of this.targets) {
-                    const dx = randomX - existingTarget.x;
-                    const dy = randomY - existingTarget.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < minDistance) {
-                        validPosition = false;
-                        break;
-                    }
-                }
-
-                attempts++;
-            } while (!validPosition && attempts < maxAttempts);
-
-            // If we couldn't find a valid position, use base position
-            if (!validPosition) {
-                randomX = targetData.x;
-                randomY = targetData.y;
-            }
-
-            const target = new Target(randomX, randomY);
-            this.targets.push(target);
-        });
-
-        // Create bird obstacle
-        this.bird = new Bird(this.canvas.width, this.canvas.height);
-        this.birdSpawnTimer = 0;
-        this.birdSpawnInterval = 5000 + Math.random() * 5000; // Random 5-10 seconds
-
-        // Reset state
-        this.currentState = this.states.MENU;
-        this.attempts = 0;
-
-        // Reset scoring for new level
-        this.levelStartTime = 0;
-        this.levelTime = 0;
-        this.usedSolver = false;
-        this.currentScore = 0;
-
-        // Reset hook animation
-        this.hookReleasing = false;
-        this.hookReleaseProgress = 0;
-        this.hookSwayOffset = 0;
+        this.levelManager.loadLevel(levelId);
     }
 
     clearLevel() {
-        // Remove ball
-        if (this.ball) {
-            Matter.World.remove(this.world, this.ball.body);
-            this.ball = null;
-        }
-
-        // Remove surfaces
-        this.surfaces.forEach(surface => {
-            Matter.World.remove(this.world, surface.body);
-        });
-        this.surfaces = [];
-        this.selectedSurfaceIndex = -1;
-
-        // Clear targets
-        this.targets = [];
+        this.levelManager.clearLevel();
     }
 
     selectNextSurface() {
@@ -544,13 +415,7 @@ export class Game {
     }
 
     nextLevel() {
-        if (this.currentLevel < getTotalLevels()) {
-            this.currentLevel++;
-            this.loadLevel(this.currentLevel);
-        } else {
-            // Game completed!
-            this.showGameComplete();
-        }
+        this.levelManager.nextLevel();
     }
 
     checkWinCondition() {
@@ -630,10 +495,7 @@ export class Game {
     }
 
     showGameComplete() {
-        this.victoryMessage.textContent = `All ${getTotalLevels()} levels complete!`;
-        this.victoryOverlay.querySelector('h1').textContent = '🏆 Congratulations!';
-        this.victoryOverlay.querySelector('.victory-footer').textContent = 'You beat the game!';
-        this.victoryOverlay.classList.remove('hidden');
+        this.levelManager.showGameComplete();
     }
 
     update(deltaTime) {
