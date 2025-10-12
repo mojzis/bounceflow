@@ -20,7 +20,7 @@ export const LEVELS = [
     },
     {
         id: 2,
-        name: "Timing is Everything",
+        name: "Double Bounce",
         ballStart: { x: 100, y: 100 },
         surfaces: [
             { x: 150, y: 500, width: 200, angle: 0, locked: true },
@@ -30,9 +30,9 @@ export const LEVELS = [
         targets: [
             { x: 700, y: 150 }
         ],
-        propertyPattern: 'wave',
-        cycleSpeed: 0.0015,
-        hint: "Watch the elasticity change - timing matters!"
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Use multiple surfaces to reach the target!"
     },
     {
         id: 3,
@@ -46,9 +46,9 @@ export const LEVELS = [
         targets: [
             { x: 650, y: 100 }
         ],
-        propertyPattern: 'wave',
-        cycleSpeed: 0.002,
-        hint: "Use high bounce to climb upward!"
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Angle surfaces to bounce upward to the target!"
     },
     {
         id: 4,
@@ -63,13 +63,13 @@ export const LEVELS = [
             { x: 150, y: 200 },
             { x: 650, y: 180 }
         ],
-        propertyPattern: 'wave',
-        cycleSpeed: 0.0018,
-        hint: "Collect both stars - plan your path!"
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Collect both stars - adjust surfaces between bounces!"
     },
     {
         id: 5,
-        name: "Rapid Changes",
+        name: "Triple Challenge",
         ballStart: { x: 100, y: 200 },
         surfaces: [
             { x: 150, y: 550, width: 200, angle: 0, locked: true },
@@ -82,9 +82,9 @@ export const LEVELS = [
             { x: 600, y: 150 },
             { x: 450, y: 80 }
         ],
-        propertyPattern: 'wave',
-        cycleSpeed: 0.003,
-        hint: "Properties change fast - adapt quickly!"
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Three stars! Master surface control to collect them all!"
     }
 ];
 
