@@ -28,6 +28,7 @@ export class Game {
         // Replay recording
         this.isRecording = false;
         this.replayData = [];
+        this.collisionData = []; // Store collision/impact data
         this.replayIndex = 0;
         this.replaySpeed = 1;
 
@@ -82,6 +83,11 @@ export class Game {
         ];
 
         Matter.World.add(this.world, this.walls);
+
+        // Set up collision detection for recording impacts
+        Matter.Events.on(this.engine, 'collisionStart', (event) => {
+            this.handleCollisions(event.pairs);
+        });
     }
 
     setupUI() {
@@ -175,6 +181,9 @@ export class Game {
 
         // Clear existing entities
         this.clearLevel();
+
+        // Hide replay button when loading new level
+        this.replayButton.style.display = 'none';
 
         // Update UI
         this.levelNumber.textContent = levelId;
@@ -291,6 +300,7 @@ export class Game {
 
             // Start recording for replay
             this.replayData = [];
+            this.collisionData = [];
             this.isRecording = true;
             this.replayButton.style.display = 'none';
         }
@@ -327,8 +337,9 @@ export class Game {
         this.ball.activate();
         this.attempts++;
 
-        // Continue recording
+        // Continue recording - clear previous data
         this.replayData = [];
+        this.collisionData = [];
     }
 
     startReplay() {
@@ -381,17 +392,25 @@ export class Game {
         this.victoryOverlay.classList.remove('hidden');
         this.isRecording = false;
 
+        console.log('Victory! Replay data length:', this.replayData.length);
+
         // Show replay button for completed level
         if (this.replayData.length > 0) {
             this.replayButton.style.display = 'block';
+            console.log('Replay button should now be visible');
         }
 
-        // Auto-advance to next level after 2 seconds
+        // Auto-advance to next level after 3 seconds
+        // Replay button stays visible even after overlay closes
         setTimeout(() => {
             this.victoryOverlay.classList.add('hidden');
-            this.replayButton.style.display = 'none'; // Hide when moving to next level
-            this.nextLevel();
         }, 2000);
+
+        // Hide replay button and advance after 5 seconds total
+        setTimeout(() => {
+            this.replayButton.style.display = 'none';
+            this.nextLevel();
+        }, 5000);
     }
 
     showGameComplete() {
@@ -451,6 +470,51 @@ export class Game {
         this.checkWinCondition();
     }
 
+    handleCollisions(pairs) {
+        if (!this.isRecording || !this.ball) return;
+
+        pairs.forEach(pair => {
+            // Check if ball collided with a surface
+            const ballBody = this.ball.body;
+            const isBallCollision = pair.bodyA === ballBody || pair.bodyB === ballBody;
+
+            if (!isBallCollision) return;
+
+            // Find which body is the surface
+            const otherBody = pair.bodyA === ballBody ? pair.bodyB : pair.bodyA;
+
+            // Find the surface object
+            const surface = this.surfaces.find(s => s.body === otherBody);
+            if (!surface) return; // Only record surface collisions, not walls
+
+            // Get collision point
+            const collision = pair.collision;
+            const contactPoint = collision.supports[0] || { x: ballBody.position.x, y: ballBody.position.y };
+
+            // Calculate normal vector (perpendicular to surface)
+            const normal = collision.normal;
+
+            // Get velocities before and after
+            const velocityBefore = { x: ballBody.velocity.x, y: ballBody.velocity.y };
+
+            // Calculate impact force magnitude (approximation based on velocity change)
+            const impactSpeed = Math.sqrt(velocityBefore.x * velocityBefore.x + velocityBefore.y * velocityBefore.y);
+
+            // Store collision data
+            this.collisionData.push({
+                x: contactPoint.x,
+                y: contactPoint.y,
+                normalX: normal.x,
+                normalY: normal.y,
+                velocityBeforeX: velocityBefore.x,
+                velocityBeforeY: velocityBefore.y,
+                impactSpeed: impactSpeed,
+                surfaceAngle: surface.body.angle * (180 / Math.PI), // Convert to degrees
+                timestamp: Date.now()
+            });
+        });
+    }
+
     updateUI() {
         if (this.ball) {
             const ratio = this.ball.getElasticityRatio();
@@ -467,8 +531,9 @@ export class Game {
         this.ctx.fillStyle = gradient;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Render surfaces
-        this.surfaces.forEach(surface => surface.render(this.ctx));
+        // Render surfaces (show angles in replay mode)
+        const isReplay = this.currentState === this.states.REPLAY;
+        this.surfaces.forEach(surface => surface.render(this.ctx, isReplay));
 
         // Render targets
         this.targets.forEach(target => target.render(this.ctx));
@@ -504,6 +569,52 @@ export class Game {
         }
         ctx.stroke();
 
+        // Draw collision/impact points with force vectors
+        this.collisionData.forEach((collision, index) => {
+            // Draw impact point
+            ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
+            ctx.beginPath();
+            ctx.arc(collision.x, collision.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw normal force vector (perpendicular to surface)
+            const normalScale = 80; // Scale for visibility
+            this.drawForceVector(
+                ctx,
+                collision.x,
+                collision.y,
+                collision.normalX * normalScale,
+                collision.normalY * normalScale,
+                '#00FF00', // Green for normal force
+                'Normal Force'
+            );
+
+            // Draw incoming velocity vector
+            const velScale = 3;
+            this.drawForceVector(
+                ctx,
+                collision.x,
+                collision.y,
+                -collision.velocityBeforeX * velScale, // Negative to show incoming direction
+                -collision.velocityBeforeY * velScale,
+                '#FF6B6B', // Red for incoming
+                'Impact'
+            );
+
+            // Draw surface angle label
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(collision.x + 15, collision.y - 45, 100, 40);
+            ctx.fillStyle = '#FFE66D';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(`Angle: ${collision.surfaceAngle.toFixed(1)}°`, collision.x + 20, collision.y - 30);
+            ctx.fillStyle = 'white';
+            ctx.font = '11px sans-serif';
+            ctx.fillText(`Speed: ${collision.impactSpeed.toFixed(1)}`, collision.x + 20, collision.y - 15);
+        });
+
         // Draw velocity vectors at key points (every 10 frames)
         for (let i = 0; i < Math.min(currentIndex, this.replayData.length); i += 10) {
             const point = this.replayData[i];
@@ -529,12 +640,79 @@ export class Game {
             this.replayIndex = 0; // Loop
         }
 
-        // Draw replay UI
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(10, 10, 200, 40);
+        // Draw replay UI with legend
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(10, 10, 280, 140);
+
+        // Progress
         ctx.fillStyle = 'white';
         ctx.font = '16px sans-serif';
-        ctx.fillText(`Replay: ${Math.floor((currentIndex / this.replayData.length) * 100)}%`, 20, 35);
+        ctx.fillText(`Replay: ${Math.floor((currentIndex / this.replayData.length) * 100)}%`, 20, 30);
+        ctx.font = '12px sans-serif';
+        ctx.fillText(`Impacts recorded: ${this.collisionData.length}`, 20, 50);
+
+        // Legend
+        ctx.fillStyle = '#FFE66D';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText('Legend:', 20, 75);
+
+        ctx.font = '11px sans-serif';
+
+        // Red vector
+        ctx.fillStyle = '#FF6B6B';
+        ctx.fillText('● Red = Impact velocity', 30, 92);
+
+        // Green vector
+        ctx.fillStyle = '#00FF00';
+        ctx.fillText('● Green = Normal force', 30, 107);
+
+        // Yellow vector
+        ctx.fillStyle = '#FFE66D';
+        ctx.fillText('● Yellow = Ball velocity', 30, 122);
+
+        // Impact marker
+        ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
+        ctx.fillText('● Impact points', 30, 137);
+    }
+
+    drawForceVector(ctx, x, y, fx, fy, color, label = '') {
+        const endX = x + fx;
+        const endY = y + fy;
+
+        // Vector line
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+
+        // Arrow head
+        const angle = Math.atan2(fy, fx);
+        const arrowSize = 12;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(
+            endX - arrowSize * Math.cos(angle - Math.PI / 6),
+            endY - arrowSize * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.lineTo(
+            endX - arrowSize * Math.cos(angle + Math.PI / 6),
+            endY - arrowSize * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.closePath();
+        ctx.fill();
+
+        // Label
+        if (label) {
+            ctx.fillStyle = color;
+            ctx.font = 'bold 11px sans-serif';
+            ctx.shadowColor = 'black';
+            ctx.shadowBlur = 3;
+            ctx.fillText(label, endX + 5, endY - 5);
+            ctx.shadowBlur = 0;
+        }
     }
 
     drawVelocityVector(ctx, x, y, vx, vy, speed, isLarge = false) {

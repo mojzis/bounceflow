@@ -139,7 +139,7 @@ export class Surface {
         };
     }
 
-    render(ctx) {
+    render(ctx, showAngle = false) {
         const endpoints = this.getEndpoints();
 
         ctx.save();
@@ -190,6 +190,18 @@ export class Surface {
                 ctx.arc(endpoints.x2, endpoints.y2, 6, 0, Math.PI * 2);
                 ctx.fill();
             }
+        }
+
+        // Show angle label during replay
+        if (showAngle && !this.locked) {
+            const normalizedAngle = ((this.angle % 360) + 360) % 360; // Normalize to 0-360
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(this.x - 35, this.y - 40, 70, 25);
+            ctx.fillStyle = '#FFE66D';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${normalizedAngle.toFixed(0)}°`, this.x, this.y - 20);
+            ctx.textAlign = 'left';
         }
 
         ctx.restore();
