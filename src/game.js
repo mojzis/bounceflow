@@ -536,25 +536,23 @@ export class Game {
         });
         Matter.World.add(tempWorld, ball);
 
-        // Create surfaces
+        // Create surfaces (including locked ones for accurate simulation)
         config.forEach(surfaceConfig => {
-            if (!surfaceConfig.locked) {
-                const angleRad = (surfaceConfig.angle * Math.PI) / 180;
-                const surface = Matter.Bodies.rectangle(
-                    surfaceConfig.x,
-                    surfaceConfig.y,
-                    surfaceConfig.width,
-                    20,
-                    {
-                        isStatic: true,
-                        angle: angleRad,
-                        friction: 0,
-                        restitution: 0.99,
-                        label: 'surface'
-                    }
-                );
-                Matter.World.add(tempWorld, surface);
-            }
+            const angleRad = (surfaceConfig.angle * Math.PI) / 180;
+            const surface = Matter.Bodies.rectangle(
+                surfaceConfig.x,
+                surfaceConfig.y,
+                surfaceConfig.width,
+                20,
+                {
+                    isStatic: true,
+                    angle: angleRad,
+                    friction: 0,
+                    restitution: 0.99,
+                    label: 'surface'
+                }
+            );
+            Matter.World.add(tempWorld, surface);
         });
 
         // Simulate for 300 frames (5 seconds at 60fps)
