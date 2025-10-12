@@ -1353,39 +1353,42 @@ export class Game {
 
             // Apply movement or rotation based on key
             const shiftMultiplier = data.shiftKey ? 5 : 1;
-            const amount = speed * shiftMultiplier;
+            const movementAmount = speed * shiftMultiplier;
+
+            // Rotation uses fixed increments (no acceleration)
+            const rotationAmount = data.shiftKey ? 5 : 1;
 
             // Movement keys
             if (key === 'w' || key === 'W' || key === 'ArrowUp') {
-                this.moveSelectedSurface(0, -amount);
+                this.moveSelectedSurface(0, -movementAmount);
             } else if (key === 's' || key === 'S' || key === 'ArrowDown') {
-                this.moveSelectedSurface(0, amount);
+                this.moveSelectedSurface(0, movementAmount);
             } else if (key === 'a' || key === 'A') {
-                this.moveSelectedSurface(-amount, 0);
+                this.moveSelectedSurface(-movementAmount, 0);
             } else if (key === 'd' || key === 'D') {
-                this.moveSelectedSurface(amount, 0);
+                this.moveSelectedSurface(movementAmount, 0);
             } else if (key === 'ArrowLeft') {
                 if (data.shiftKey) {
                     // Shift + Left Arrow = Rotate left
-                    this.rotateSelectedSurface(-amount);
+                    this.rotateSelectedSurface(-rotationAmount);
                 } else {
                     // Left Arrow alone = Move left
-                    this.moveSelectedSurface(-amount, 0);
+                    this.moveSelectedSurface(-movementAmount, 0);
                 }
             } else if (key === 'ArrowRight') {
                 if (data.shiftKey) {
                     // Shift + Right Arrow = Rotate right
-                    this.rotateSelectedSurface(amount);
+                    this.rotateSelectedSurface(rotationAmount);
                 } else {
                     // Right Arrow alone = Move right
-                    this.moveSelectedSurface(amount, 0);
+                    this.moveSelectedSurface(movementAmount, 0);
                 }
             }
-            // Rotation keys (Q/E)
+            // Rotation keys (Q/E) - fixed increments, no acceleration
             else if (key === 'q' || key === 'Q') {
-                this.rotateSelectedSurface(-amount);
+                this.rotateSelectedSurface(-rotationAmount);
             } else if (key === 'e' || key === 'E') {
-                this.rotateSelectedSurface(amount);
+                this.rotateSelectedSurface(rotationAmount);
             }
         }
     }
