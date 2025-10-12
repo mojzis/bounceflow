@@ -226,6 +226,15 @@ export class Game {
         // Hide replay button when loading new level
         this.replayButton.style.display = 'none';
 
+        // Clear solver state
+        this.solverRunning = false;
+        this.solverAttempts = [];
+        this.solverBestConfig = null;
+        this.solverCurrentAttempt = 0;
+        this.showHints = false;
+        this.hintButton.textContent = 'Show Hint (?)';
+        this.hintButton.disabled = false;
+
         // Update UI
         this.levelNumber.textContent = levelId;
         this.hintText.textContent = level.hint;
