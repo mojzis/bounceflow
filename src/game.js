@@ -346,10 +346,14 @@ export class Game {
 
     startSolver() {
         console.log('🚀 Starting solver...');
+
+        // Clear all previous solver state (important for retries)
         this.solverRunning = true;
         this.solverAttempts = [];
         this.solverBestConfig = null;
         this.solverCurrentAttempt = 0;
+        this.showHints = false; // Clear visualization from previous run
+
         this.hintButton.textContent = 'Solving...';
         this.hintButton.disabled = true;
 
@@ -434,14 +438,14 @@ export class Game {
     }
 
     generateRandomConfig(level) {
+        // Calculate average target position for smarter angle generation
+        const avgTargetX = this.targets.reduce((sum, t) => sum + t.x, 0) / this.targets.length;
+        const avgTargetY = this.targets.reduce((sum, t) => sum + t.y, 0) / this.targets.length;
+
         // Generate random surface positions based on initial setup
         const config = level.surfaces.map((surface, index) => {
-            // Add some random variation
-            const angleVariation = (Math.random() - 0.5) * 60; // ±30 degrees
+            let xVariation, yVariation, angle;
 
-            // For the first surface, keep it near the ball's X position
-            // since ball falls straight down
-            let xVariation, yVariation;
             if (index === 0) {
                 // First surface must catch falling ball
                 // Keep X near ball start, vary Y less
@@ -449,25 +453,51 @@ export class Game {
                 const halfWidth = surface.width / 2;
 
                 // Ensure surface can catch ball: ballX should be within surface range
-                // Surface extends from (x - halfWidth) to (x + halfWidth)
-                // So x should be between (ballX - halfWidth + 20) and (ballX + halfWidth - 20)
                 const minX = ballX - halfWidth + 40;
                 const maxX = ballX + halfWidth - 40;
                 const targetX = minX + Math.random() * (maxX - minX);
                 xVariation = targetX - surface.x;
-
                 yVariation = (Math.random() - 0.5) * 40; // ±20 pixels vertically
+
+                // Smart angle: calculate direction toward target
+                const surfaceX = surface.x + xVariation;
+                const directionToTarget = avgTargetX - ballX;
+
+                if (directionToTarget > 0) {
+                    // Target is to the right, angle should be positive (slope up-right)
+                    // Range: 10° to 70°
+                    angle = 10 + Math.random() * 60;
+                } else {
+                    // Target is to the left, angle should be negative (slope up-left)
+                    // Range: -70° to -10°
+                    angle = -70 + Math.random() * 60;
+                }
             } else {
                 // Other surfaces can vary more
                 xVariation = (Math.random() - 0.5) * 100; // ±50 pixels
                 yVariation = (Math.random() - 0.5) * 80; // ±40 pixels
+
+                // Smart angle for subsequent surfaces too
+                const surfaceX = surface.x + xVariation;
+                const directionToTarget = avgTargetX - surfaceX;
+
+                if (Math.abs(directionToTarget) < 50) {
+                    // Target roughly aligned, use moderate angles
+                    angle = surface.angle + (Math.random() - 0.5) * 40; // ±20°
+                } else if (directionToTarget > 0) {
+                    // Target is to the right
+                    angle = (Math.random() - 0.5) * 60 + 30; // Range roughly 0° to 60°
+                } else {
+                    // Target is to the left
+                    angle = (Math.random() - 0.5) * 60 - 30; // Range roughly -60° to 0°
+                }
             }
 
             return {
                 x: surface.x + xVariation,
                 y: surface.y + yVariation,
                 width: surface.width,
-                angle: surface.angle + angleVariation,
+                angle: angle,
                 locked: surface.locked
             };
         });
