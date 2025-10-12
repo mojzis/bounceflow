@@ -35,7 +35,7 @@ export const LEVELS = [
     {
         id: 3,
         name: "The Climb",
-        ballStart: { x: 100, y: 400 },
+        ballStart: { x: 100, y: 340 },
         surfaces: [
             { x: 350, y: 420, width: 200, angle: 45, locked: false },
             { x: 550, y: 350, width: 180, angle: -30, locked: false }
@@ -67,7 +67,7 @@ export const LEVELS = [
     {
         id: 5,
         name: "Triple Challenge",
-        ballStart: { x: 100, y: 200 },
+        ballStart: { x: 100, y: 150 },
         surfaces: [
             { x: 350, y: 450, width: 180, angle: 20, locked: false },
             { x: 550, y: 380, width: 160, angle: -25, locked: false },
@@ -136,7 +136,7 @@ export const LEVELS = [
     {
         id: 9,
         name: "Chain Reaction",
-        ballStart: { x: 100, y: 100 },
+        ballStart: { x: 100, y: 50 },
         surfaces: [
             { x: 250, y: 450, width: 180, angle: 35, locked: false },
             { x: 450, y: 380, width: 160, angle: -30, locked: false },
@@ -195,7 +195,7 @@ export const LEVELS = [
     {
         id: 12,
         name: "The Catapult",
-        ballStart: { x: 150, y: 400 },
+        ballStart: { x: 150, y: 80 },
         surfaces: [
             { x: 250, y: 470, width: 200, angle: 65, locked: false },
             { x: 500, y: 200, width: 180, angle: -20, locked: false },
