@@ -134,6 +134,11 @@ button {
     padding: 8px 16px;
 }
 
+.btn-replay {
+    background: #FFE66D;
+    color: #333;
+}
+
 #hint-box {
     position: absolute;
     bottom: 30px;

@@ -18,11 +18,18 @@ export class Game {
             MENU: 'menu',
             PLAYING: 'playing',
             PAUSED: 'paused',
-            WON: 'won'
+            WON: 'won',
+            REPLAY: 'replay'
         };
         this.currentState = this.states.MENU;
         this.currentLevel = 1;
         this.attempts = 0;
+
+        // Replay recording
+        this.isRecording = false;
+        this.replayData = [];
+        this.replayIndex = 0;
+        this.replaySpeed = 1;
 
         // Physics setup
         this.setupPhysics();
@@ -90,11 +97,13 @@ export class Game {
         this.closeHelpButton = document.getElementById('close-help');
         this.victoryOverlay = document.getElementById('victory-overlay');
         this.victoryMessage = document.getElementById('victory-message');
+        this.replayButton = document.getElementById('replayButton');
 
         // Button handlers
         this.playButton.addEventListener('click', () => this.startPlay());
         this.dropButton.addEventListener('click', () => this.dropBall());
         this.restartButton.addEventListener('click', () => this.restart());
+        this.replayButton.addEventListener('click', () => this.startReplay());
         this.helpButton.addEventListener('click', () => this.toggleHelp());
         this.closeHelpButton.addEventListener('click', () => this.hideHelp());
 
@@ -273,6 +282,11 @@ export class Game {
             this.attempts++;
             this.playButton.textContent = 'Playing...';
             this.playButton.disabled = true;
+
+            // Start recording for replay
+            this.replayData = [];
+            this.isRecording = true;
+            this.replayButton.style.display = 'none';
         }
     }
 
@@ -282,6 +296,12 @@ export class Game {
         this.currentState = this.states.MENU;
         this.playButton.textContent = 'Play';
         this.playButton.disabled = false;
+        this.isRecording = false;
+
+        // Show replay button if we have data
+        if (this.replayData.length > 0) {
+            this.replayButton.style.display = 'block';
+        }
 
         // Reset targets
         this.targets.forEach(target => {
@@ -298,6 +318,32 @@ export class Game {
         this.ball.reset(level.ballStart.x, level.ballStart.y);
         this.ball.activate();
         this.attempts++;
+
+        // Continue recording
+        this.replayData = [];
+    }
+
+    startReplay() {
+        if (this.replayData.length === 0) return;
+
+        this.currentState = this.states.REPLAY;
+        this.replayIndex = 0;
+        this.playButton.textContent = 'Exit Replay';
+        this.playButton.disabled = false;
+        this.replayButton.style.display = 'none';
+
+        // Reset ball to start
+        const level = getLevel(this.currentLevel);
+        this.ball.reset(level.ballStart.x, level.ballStart.y);
+    }
+
+    stopReplay() {
+        this.currentState = this.states.MENU;
+        this.playButton.textContent = 'Play';
+        this.replayButton.style.display = 'block';
+
+        const level = getLevel(this.currentLevel);
+        this.ball.reset(level.ballStart.x, level.ballStart.y);
     }
 
     nextLevel() {
@@ -341,10 +387,31 @@ export class Game {
     }
 
     update(deltaTime) {
+        if (this.currentState === this.states.REPLAY) {
+            // Replay mode - just advance through recorded data
+            this.replayIndex += this.replaySpeed;
+            return;
+        }
+
         // Update physics with fixed timestep (16.67ms = 60Hz)
         // This prevents tunneling issues
         const fixedTimeStep = 1000 / 60;
         Matter.Engine.update(this.engine, fixedTimeStep);
+
+        // Record ball state if recording
+        if (this.isRecording && this.ball && this.ball.isActive) {
+            const velocity = this.ball.body.velocity;
+            const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+
+            this.replayData.push({
+                x: this.ball.body.position.x,
+                y: this.ball.body.position.y,
+                vx: velocity.x,
+                vy: velocity.y,
+                speed: speed,
+                timestamp: Date.now()
+            });
+        }
 
         // Update entities
         if (this.ball) {
@@ -391,9 +458,105 @@ export class Game {
         // Render targets
         this.targets.forEach(target => target.render(this.ctx));
 
-        // Render ball
-        if (this.ball) {
-            this.ball.render(this.ctx);
+        // Render replay mode
+        if (this.currentState === this.states.REPLAY) {
+            this.renderReplay();
+        } else {
+            // Render ball normally
+            if (this.ball) {
+                this.ball.render(this.ctx);
+            }
+        }
+    }
+
+    renderReplay() {
+        if (this.replayData.length === 0) return;
+
+        const ctx = this.ctx;
+        const currentIndex = Math.floor(this.replayIndex);
+
+        // Draw full path as a trail
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < this.replayData.length; i++) {
+            const point = this.replayData[i];
+            if (i === 0) {
+                ctx.moveTo(point.x, point.y);
+            } else {
+                ctx.lineTo(point.x, point.y);
+            }
+        }
+        ctx.stroke();
+
+        // Draw velocity vectors at key points (every 10 frames)
+        for (let i = 0; i < Math.min(currentIndex, this.replayData.length); i += 10) {
+            const point = this.replayData[i];
+            this.drawVelocityVector(ctx, point.x, point.y, point.vx, point.vy, point.speed);
+        }
+
+        // Draw current position with larger vector
+        if (currentIndex < this.replayData.length) {
+            const current = this.replayData[currentIndex];
+
+            // Draw ball at current position
+            ctx.fillStyle = '#FF6B6B';
+            ctx.beginPath();
+            ctx.arc(current.x, current.y, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw velocity vector
+            this.drawVelocityVector(ctx, current.x, current.y, current.vx, current.vy, current.speed, true);
+        }
+
+        // If replay finished, loop or stop
+        if (currentIndex >= this.replayData.length) {
+            this.replayIndex = 0; // Loop
+        }
+
+        // Draw replay UI
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(10, 10, 200, 40);
+        ctx.fillStyle = 'white';
+        ctx.font = '16px sans-serif';
+        ctx.fillText(`Replay: ${Math.floor((currentIndex / this.replayData.length) * 100)}%`, 20, 35);
+    }
+
+    drawVelocityVector(ctx, x, y, vx, vy, speed, isLarge = false) {
+        const scale = isLarge ? 3 : 2;
+        const endX = x + vx * scale;
+        const endY = y + vy * scale;
+
+        // Vector line
+        ctx.strokeStyle = isLarge ? '#FFE66D' : 'rgba(255, 230, 109, 0.6)';
+        ctx.lineWidth = isLarge ? 3 : 2;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+
+        // Arrow head
+        const angle = Math.atan2(vy, vx);
+        const arrowSize = isLarge ? 12 : 8;
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.beginPath();
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(
+            endX - arrowSize * Math.cos(angle - Math.PI / 6),
+            endY - arrowSize * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.lineTo(
+            endX - arrowSize * Math.cos(angle + Math.PI / 6),
+            endY - arrowSize * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.closePath();
+        ctx.fill();
+
+        // Speed label for large vectors
+        if (isLarge) {
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText(`${speed.toFixed(1)} px/s`, endX + 10, endY - 10);
         }
     }
 
