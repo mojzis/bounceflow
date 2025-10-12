@@ -59,6 +59,10 @@ export class Game {
         this.replayIndex = 0;
         this.replaySpeed = 1;
 
+        // Victory screen timers (need to be cleared when entering replay)
+        this.victoryHideTimer = null;
+        this.victoryAdvanceTimer = null;
+
         // Bird obstacle
         this.bird = null;
         this.birdSpawnTimer = 0;
@@ -78,6 +82,10 @@ export class Game {
         this.isMouseDown = false;
         this.isRightClick = false;
         this.touches = new Map();
+
+        // Keyboard acceleration for surface control
+        this.heldKeys = new Set();
+        this.keyHoldDuration = new Map(); // Track how long each key has been held
 
         // UI elements
         this.setupUI();
@@ -177,6 +185,20 @@ export class Game {
                 return;
             }
 
+            // Prevent key repeat for held keys - only start tracking on first press
+            const isMovementKey = ['w', 'W', 'a', 'A', 's', 'S', 'd', 'D', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'q', 'Q', 'e', 'E'].includes(e.key);
+
+            if (isMovementKey) {
+                if (!e.repeat && !this.heldKeys.has(e.key)) {
+                    // Start tracking this key
+                    this.heldKeys.add(e.key);
+                    this.keyHoldDuration.set(e.key, { startTime: Date.now(), shiftKey: e.shiftKey });
+                }
+                e.preventDefault();
+                return;
+            }
+
+            // Non-movement keys: process immediately
             if (e.key === 'r' || e.key === 'R') {
                 this.restart();
             } else if (e.key === ' ') {
@@ -188,47 +210,6 @@ export class Game {
                 e.preventDefault();
             } else if (e.key === 'Tab') {
                 this.selectNextSurface();
-                e.preventDefault();
-            } else if (e.key === 'q' || e.key === 'Q') {
-                // Shift for coarse (5°), normal for fine (1°)
-                const rotateAmount = e.shiftKey ? -5 : -1;
-                this.rotateSelectedSurface(rotateAmount);
-                e.preventDefault();
-            } else if (e.key === 'e' || e.key === 'E') {
-                const rotateAmount = e.shiftKey ? 5 : 1;
-                this.rotateSelectedSurface(rotateAmount);
-                e.preventDefault();
-            } else if (e.key === 'ArrowLeft') {
-                const rotateAmount = e.shiftKey ? -5 : -1;
-                this.rotateSelectedSurface(rotateAmount);
-                e.preventDefault();
-            } else if (e.key === 'ArrowRight') {
-                const rotateAmount = e.shiftKey ? 5 : 1;
-                this.rotateSelectedSurface(rotateAmount);
-                e.preventDefault();
-            } else if (e.key === 'w' || e.key === 'W') {
-                const moveAmount = e.shiftKey ? -5 : -1;
-                this.moveSelectedSurface(0, moveAmount);
-                e.preventDefault();
-            } else if (e.key === 's' || e.key === 'S') {
-                const moveAmount = e.shiftKey ? 5 : 1;
-                this.moveSelectedSurface(0, moveAmount);
-                e.preventDefault();
-            } else if (e.key === 'ArrowUp') {
-                const moveAmount = e.shiftKey ? -5 : -1;
-                this.moveSelectedSurface(0, moveAmount);
-                e.preventDefault();
-            } else if (e.key === 'ArrowDown') {
-                const moveAmount = e.shiftKey ? 5 : 1;
-                this.moveSelectedSurface(0, moveAmount);
-                e.preventDefault();
-            } else if (e.key === 'a' || e.key === 'A') {
-                const moveAmount = e.shiftKey ? -5 : -1;
-                this.moveSelectedSurface(moveAmount, 0);
-                e.preventDefault();
-            } else if (e.key === 'd' || e.key === 'D') {
-                const moveAmount = e.shiftKey ? 5 : 1;
-                this.moveSelectedSurface(moveAmount, 0);
                 e.preventDefault();
             } else if (e.key === 'v' || e.key === 'V') {
                 // Toggle angle display
@@ -245,6 +226,14 @@ export class Game {
                 e.preventDefault();
             }
         });
+
+        // Keyup handler to clear held keys
+        document.addEventListener('keyup', (e) => {
+            if (this.heldKeys.has(e.key)) {
+                this.heldKeys.delete(e.key);
+                this.keyHoldDuration.delete(e.key);
+            }
+        });
     }
 
     loadLevel(levelId) {
@@ -254,10 +243,29 @@ export class Game {
             return;
         }
 
+        // CRITICAL: Stop any running solver before clearing
+        if (this.solverRunning) {
+            this.stopSolver();
+        }
+
+        // CRITICAL: Clear victory timers when loading new level
+        if (this.victoryHideTimer) {
+            clearTimeout(this.victoryHideTimer);
+            this.victoryHideTimer = null;
+        }
+        if (this.victoryAdvanceTimer) {
+            clearTimeout(this.victoryAdvanceTimer);
+            this.victoryAdvanceTimer = null;
+        }
+
         // Clear existing entities
         this.clearLevel();
 
-        // Hide replay button when loading new level
+        // CRITICAL: Clear replay data from previous level
+        this.replayData = [];
+        this.collisionData = [];
+        this.isRecording = false;
+        this.replayIndex = 0;
         this.replayButton.style.display = 'none';
 
         // Clear solver state
@@ -274,6 +282,8 @@ export class Game {
         this.showHints = false;
         this.hintButton.textContent = 'Show Hint (?)';
         this.hintButton.disabled = false;
+        this.refineButton.textContent = 'Refine My Setup';
+        this.refineButton.disabled = false;
 
         // Update UI
         this.levelNumber.textContent = levelId;
@@ -989,7 +999,27 @@ export class Game {
     }
 
     startReplay() {
-        if (this.replayData.length === 0) return;
+        if (this.replayData.length === 0) {
+            console.warn('Cannot start replay: no replay data available');
+            return;
+        }
+
+        // CRITICAL: Cancel victory screen auto-advance timers
+        if (this.victoryHideTimer) {
+            clearTimeout(this.victoryHideTimer);
+            this.victoryHideTimer = null;
+        }
+        if (this.victoryAdvanceTimer) {
+            clearTimeout(this.victoryAdvanceTimer);
+            this.victoryAdvanceTimer = null;
+            console.log('✅ Cancelled auto-advance to next level');
+        }
+
+        // Ensure we're not in a bad state
+        if (this.currentState === this.states.PLAYING) {
+            console.log('Stopping active game before replay');
+            this.restart();
+        }
 
         this.currentState = this.states.REPLAY;
         this.replayIndex = 0;
@@ -999,16 +1029,26 @@ export class Game {
 
         // Reset ball to start
         const level = getLevel(this.currentLevel);
-        this.ball.reset(level.ballStart.x, level.ballStart.y);
+        if (this.ball) {
+            this.ball.reset(level.ballStart.x, level.ballStart.y);
+        }
     }
 
     stopReplay() {
+        console.log('Stopping replay, returning to MENU');
         this.currentState = this.states.MENU;
         this.playButton.textContent = 'Play';
-        this.replayButton.style.display = 'block';
+        this.playButton.disabled = false;
+
+        // Only show replay button if we have data for current level
+        if (this.replayData.length > 0) {
+            this.replayButton.style.display = 'block';
+        }
 
         const level = getLevel(this.currentLevel);
-        this.ball.reset(level.ballStart.x, level.ballStart.y);
+        if (this.ball && level) {
+            this.ball.reset(level.ballStart.x, level.ballStart.y);
+        }
     }
 
     nextLevel() {
@@ -1080,14 +1120,18 @@ export class Game {
             console.log('Replay button should now be visible');
         }
 
+        // Clear any existing timers to prevent double-advance
+        if (this.victoryHideTimer) clearTimeout(this.victoryHideTimer);
+        if (this.victoryAdvanceTimer) clearTimeout(this.victoryAdvanceTimer);
+
         // Auto-advance to next level after 3 seconds
         // Replay button stays visible even after overlay closes
-        setTimeout(() => {
+        this.victoryHideTimer = setTimeout(() => {
             this.victoryOverlay.classList.add('hidden');
         }, 2000);
 
         // Hide replay button and advance after 5 seconds total
-        setTimeout(() => {
+        this.victoryAdvanceTimer = setTimeout(() => {
             this.replayButton.style.display = 'none';
             this.nextLevel();
         }, 5000);
@@ -1107,6 +1151,17 @@ export class Game {
             return;
         }
 
+        // Safety check: verify ball is in valid state before physics update
+        if (this.ball && this.ball.isActive) {
+            const pos = this.ball.body.position;
+            const vel = this.ball.body.velocity;
+            if (!isFinite(pos.x) || !isFinite(pos.y) || !isFinite(vel.x) || !isFinite(vel.y)) {
+                console.error('⚠️ Detected corrupted ball in update loop - forcing restart');
+                this.restart();
+                return;
+            }
+        }
+
         // Update physics with fixed timestep (16.67ms = 60Hz)
         // This prevents tunneling issues
         const fixedTimeStep = 1000 / 60;
@@ -1117,14 +1172,17 @@ export class Game {
             const velocity = this.ball.body.velocity;
             const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
 
-            this.replayData.push({
-                x: this.ball.body.position.x,
-                y: this.ball.body.position.y,
-                vx: velocity.x,
-                vy: velocity.y,
-                speed: speed,
-                timestamp: Date.now()
-            });
+            // Double-check validity before recording
+            if (isFinite(velocity.x) && isFinite(velocity.y)) {
+                this.replayData.push({
+                    x: this.ball.body.position.x,
+                    y: this.ball.body.position.y,
+                    vx: velocity.x,
+                    vy: velocity.y,
+                    speed: speed,
+                    timestamp: Date.now()
+                });
+            }
         }
 
         // Update hook animation
@@ -1177,6 +1235,9 @@ export class Game {
                 this.restart();
             }
         }
+
+        // Process held keys with acceleration
+        this.processHeldKeys();
 
         // Update UI
         this.updateUI();
@@ -1233,6 +1294,59 @@ export class Game {
                 timestamp: Date.now()
             });
         });
+    }
+
+    processHeldKeys() {
+        // Skip if no surface selected
+        if (this.selectedSurfaceIndex < 0 || this.selectedSurfaceIndex >= this.surfaces.length) {
+            return;
+        }
+
+        const now = Date.now();
+
+        // Process each held key
+        for (const [key, data] of this.keyHoldDuration.entries()) {
+            const holdDuration = now - data.startTime;
+
+            // Calculate acceleration based on hold duration
+            // 0-200ms: 1px/frame (fine control)
+            // 200-1000ms: ramp from 1 to 5px/frame (acceleration)
+            // 1000ms+: 5px/frame (max speed)
+            let speed;
+            if (holdDuration < 200) {
+                speed = 1;
+            } else if (holdDuration < 1000) {
+                // Linear ramp from 1 to 5 over 800ms
+                speed = 1 + ((holdDuration - 200) / 800) * 4;
+            } else {
+                speed = 5;
+            }
+
+            // Apply movement or rotation based on key
+            const shiftMultiplier = data.shiftKey ? 5 : 1;
+            const amount = speed * shiftMultiplier;
+
+            // Movement keys
+            if (key === 'w' || key === 'W' || key === 'ArrowUp') {
+                this.moveSelectedSurface(0, -amount);
+            } else if (key === 's' || key === 'S' || key === 'ArrowDown') {
+                this.moveSelectedSurface(0, amount);
+            } else if (key === 'a' || key === 'A') {
+                this.moveSelectedSurface(-amount, 0);
+            } else if (key === 'd' || key === 'D') {
+                this.moveSelectedSurface(amount, 0);
+            }
+            // Rotation keys
+            else if (key === 'q' || key === 'Q') {
+                this.rotateSelectedSurface(-amount);
+            } else if (key === 'e' || key === 'E') {
+                this.rotateSelectedSurface(amount);
+            } else if (key === 'ArrowLeft') {
+                this.rotateSelectedSurface(-amount);
+            } else if (key === 'ArrowRight') {
+                this.rotateSelectedSurface(amount);
+            }
+        }
     }
 
     updateUI() {
@@ -1355,68 +1469,155 @@ export class Game {
 
         // Calculate hook position with sway and release animation
         let hookX = ballPos.x + this.hookSwayOffset;
-        let hookY = ballPos.y - ballRadius - 10;
+        let hookY = ballPos.y - ballRadius - 8;
 
         // During release, move hook upward
         if (this.hookReleasing) {
             hookY -= this.hookReleaseProgress * 80;
         }
 
-        // Draw cable/rope from top of screen
+        // Draw cable/rope from top of screen (friendlier color)
         ctx.save();
-        ctx.strokeStyle = 'rgba(80, 80, 80, 0.6)';
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(120, 140, 160, 0.7)';
+        ctx.lineWidth = 4;
         ctx.lineCap = 'round';
 
         // Draw cable with slight curve
         ctx.beginPath();
         ctx.moveTo(hookX, 0);
-        // Bezier curve for natural hanging cable
         const controlY = hookY * 0.3;
         ctx.quadraticCurveTo(hookX + this.hookSwayOffset * 0.5, controlY, hookX, hookY);
         ctx.stroke();
 
-        // Draw hook mechanism
-        const hookSize = 30;
-        const openAmount = this.hookReleasing ? this.hookReleaseProgress * 45 : 0; // Opens 45 degrees
+        // Crab claw parameters
+        const clawRadius = 15; // Radius of the rounded claw
+        const clawThickness = 8; // Thickness of the claw
+        const closedDistance = ballRadius + 5; // Start close to ball sides
+        const openDistance = this.hookReleasing
+            ? closedDistance + (this.hookReleaseProgress * 35) // Open further when releasing
+            : closedDistance;
 
-        // Hook body (small rectangle at top)
-        ctx.fillStyle = '#555';
-        ctx.fillRect(hookX - 6, hookY - 15, 12, 15);
+        // Draw robot hand base (top connector)
+        ctx.fillStyle = '#7B8FA3';
+        ctx.fillRect(hookX - 20, hookY - 22, 40, 16);
 
-        // Draw hook claws (two curved pieces)
-        ctx.strokeStyle = '#555';
-        ctx.lineWidth = 6;
-
-        // Left claw
+        // Rounded corners for base
         ctx.beginPath();
-        ctx.arc(
-            hookX - 8,
-            hookY,
-            hookSize / 2,
-            Math.PI / 4 - openAmount * (Math.PI / 180),
-            Math.PI * 0.75,
-            false
-        );
-        ctx.stroke();
-
-        // Right claw
-        ctx.beginPath();
-        ctx.arc(
-            hookX + 8,
-            hookY,
-            hookSize / 2,
-            Math.PI / 4,
-            Math.PI * 0.75 + openAmount * (Math.PI / 180),
-            true
-        );
-        ctx.stroke();
-
-        // Draw attachment point (small circle)
-        ctx.fillStyle = '#666';
-        ctx.beginPath();
-        ctx.arc(hookX, hookY - 15, 5, 0, Math.PI * 2);
+        ctx.arc(hookX - 20, hookY - 14, 8, Math.PI, Math.PI * 1.5);
+        ctx.arc(hookX + 20, hookY - 14, 8, Math.PI * 1.5, 0);
         ctx.fill();
+
+        ctx.fillStyle = '#95B8D1';
+        ctx.strokeStyle = '#6B8BA3';
+        ctx.lineWidth = 2.5;
+
+        // LEFT CRAB CLAW (rounded pincer on left side of ball)
+        const leftClawX = hookX - openDistance;
+        const leftClawY = ballPos.y; // Align with ball center
+
+        // Draw left arm connecting to base
+        ctx.fillRect(leftClawX, hookY - 6, openDistance - closedDistance + 12, 12);
+
+        // Draw left rounded claw (C-shape opening to the right)
+        ctx.beginPath();
+        // Outer arc
+        ctx.arc(leftClawX, leftClawY, clawRadius, Math.PI * 0.6, Math.PI * 1.4, false);
+        // Inner arc (smaller, creating thickness)
+        ctx.arc(leftClawX, leftClawY, clawRadius - clawThickness, Math.PI * 1.4, Math.PI * 0.6, true);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Upper pincer tip
+        ctx.beginPath();
+        ctx.arc(leftClawX + clawRadius * Math.cos(Math.PI * 0.6),
+                leftClawY + clawRadius * Math.sin(Math.PI * 0.6),
+                clawThickness / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Lower pincer tip
+        ctx.beginPath();
+        ctx.arc(leftClawX + clawRadius * Math.cos(Math.PI * 1.4),
+                leftClawY + clawRadius * Math.sin(Math.PI * 1.4),
+                clawThickness / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Grip pad on left claw
+        ctx.fillStyle = '#FFE66D';
+        ctx.beginPath();
+        ctx.arc(leftClawX + clawRadius - 6, leftClawY, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Joint detail on left arm
+        ctx.fillStyle = '#5A7A8A';
+        ctx.beginPath();
+        ctx.arc(leftClawX + 8, hookY, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // RIGHT CRAB CLAW (rounded pincer on right side of ball)
+        const rightClawX = hookX + openDistance;
+        const rightClawY = ballPos.y; // Align with ball center
+
+        // Draw right arm connecting to base
+        ctx.fillStyle = '#95B8D1';
+        ctx.fillRect(hookX, hookY - 6, openDistance - closedDistance + 12, 12);
+
+        // Draw right rounded claw (backwards C-shape opening to the left)
+        ctx.beginPath();
+        // Outer arc
+        ctx.arc(rightClawX, rightClawY, clawRadius, Math.PI * 1.6, Math.PI * 0.4, false);
+        // Inner arc (smaller, creating thickness)
+        ctx.arc(rightClawX, rightClawY, clawRadius - clawThickness, Math.PI * 0.4, Math.PI * 1.6, true);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Upper pincer tip
+        ctx.beginPath();
+        ctx.arc(rightClawX + clawRadius * Math.cos(Math.PI * 1.6),
+                rightClawY + clawRadius * Math.sin(Math.PI * 1.6),
+                clawThickness / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Lower pincer tip
+        ctx.beginPath();
+        ctx.arc(rightClawX + clawRadius * Math.cos(Math.PI * 0.4),
+                rightClawY + clawRadius * Math.sin(Math.PI * 0.4),
+                clawThickness / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Grip pad on right claw
+        ctx.fillStyle = '#FFE66D';
+        ctx.beginPath();
+        ctx.arc(rightClawX - clawRadius + 6, rightClawY, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Joint detail on right arm
+        ctx.fillStyle = '#5A7A8A';
+        ctx.beginPath();
+        ctx.arc(rightClawX - 8, hookY, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Add cute robot eye on the base
+        if (!this.hookReleasing || this.hookReleaseProgress < 0.5) {
+            ctx.fillStyle = '#4ECDC4';
+            ctx.beginPath();
+            ctx.arc(hookX, hookY - 14, 4, 0, Math.PI * 2);
+            ctx.fill();
+            // Add highlight for eye
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.beginPath();
+            ctx.arc(hookX - 1, hookY - 15, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Add joint screws/rivets for detail
+        ctx.fillStyle = '#5A7A8A';
+        [-11, 11].forEach(xOffset => {
+            ctx.beginPath();
+            ctx.arc(hookX + xOffset, hookY - 12, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+        });
 
         ctx.restore();
     }

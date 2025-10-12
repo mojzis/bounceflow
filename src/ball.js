@@ -65,13 +65,16 @@ export class Ball {
     update(deltaTime) {
         if (!this.isActive) return;
 
-        // Validate physics body state - reset if corrupted
+        // Validate physics body state - detect corruption
         const pos = this.body.position;
         const vel = this.body.velocity;
         if (!isFinite(pos.x) || !isFinite(pos.y) || !isFinite(vel.x) || !isFinite(vel.y)) {
-            console.error('Ball physics corrupted! Resetting to safe state.');
-            const level = { ballStart: { x: 100, y: 100 } }; // Fallback position
-            this.reset(level.ballStart.x, level.ballStart.y);
+            console.error('❌ Ball physics corrupted! Position:', pos, 'Velocity:', vel);
+            console.error('Ball will be deactivated. Use restart (R) to continue.');
+            // Deactivate ball and freeze it to stop the corruption loop
+            this.isActive = false;
+            Matter.Body.setStatic(this.body, true);
+            Matter.Body.setVelocity(this.body, { x: 0, y: 0 });
             return;
         }
 
