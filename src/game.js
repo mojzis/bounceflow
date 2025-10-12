@@ -31,6 +31,7 @@ export class Game {
         this.solverRunning = false;
         this.solverAttempts = [];
         this.solverBestConfig = null;
+        this.solverBestDistance = Infinity;
         this.solverCurrentAttempt = 0;
 
         // Replay recording
@@ -230,6 +231,7 @@ export class Game {
         this.solverRunning = false;
         this.solverAttempts = [];
         this.solverBestConfig = null;
+        this.solverBestDistance = Infinity;
         this.solverCurrentAttempt = 0;
         this.showHints = false;
         this.hintButton.textContent = 'Show Hint (?)';
@@ -351,6 +353,7 @@ export class Game {
         this.solverRunning = true;
         this.solverAttempts = [];
         this.solverBestConfig = null;
+        this.solverBestDistance = Infinity;
         this.solverCurrentAttempt = 0;
         this.showHints = false; // Clear visualization from previous run
 
@@ -417,11 +420,9 @@ export class Game {
         }
 
         // Keep track of best attempt
-        if (!this.solverBestConfig || result.closestDistance < this.solverBestConfig.closestDistance) {
-            this.solverBestConfig = {
-                ...config,
-                closestDistance: result.closestDistance
-            };
+        if (!this.solverBestConfig || result.closestDistance < this.solverBestDistance) {
+            this.solverBestConfig = config;
+            this.solverBestDistance = result.closestDistance;
         }
 
         // Limit attempts
