@@ -206,8 +206,8 @@ export class Game {
                 this.showAngles = !this.showAngles;
                 e.preventDefault();
             } else if (e.key === '?' || e.key === '/') {
-                // Toggle hint display
-                this.showHints = !this.showHints;
+                // Toggle solver (same as clicking button)
+                this.toggleHints();
                 e.preventDefault();
             }
         });
@@ -843,7 +843,8 @@ export class Game {
     }
 
     renderHints() {
-        if (!this.showHints && !this.solverRunning) return;
+        // Only render if solver is actually running or we have results to show
+        if (!this.solverRunning && !this.solverBestConfig) return;
 
         const ctx = this.ctx;
 
@@ -855,15 +856,9 @@ export class Game {
 
         if (this.solverRunning) {
             const text = `🔬 Experimenting... (${this.solverCurrentAttempt} tries)`;
-            console.log('Rendering solver status:', text);
             ctx.fillText(text, 20, this.canvas.height - 95);
         } else if (this.solverBestConfig) {
             ctx.fillText(`💡 Solution Shown`, 20, this.canvas.height - 95);
-        } else {
-            // Debug: show if we get here
-            console.log('renderHints called but no status to show');
-            ctx.fillStyle = 'white';
-            ctx.fillText('Initializing...', 20, this.canvas.height - 95);
         }
 
         // Show attempts count
