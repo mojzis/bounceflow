@@ -15,11 +15,7 @@ export const LEVELS = [
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Position the surface, then press Space to release the ball!",
-        solution: [
-            // Ball at x:150, surface width 300 extends ±150, so center at x:250 means x:100-400 (catches ball)
-            { x: 280, y: 380, width: 300, angle: 28 }
-        ]
+        hint: "Position the surface, then press Space to release the ball!"
     },
     {
         id: 2,
@@ -34,12 +30,7 @@ export const LEVELS = [
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Use multiple surfaces to reach the target!",
-        solution: [
-            // Ball at x:100, width 200 (±100), center at 150 = x:50-250
-            { x: 160, y: 350, width: 200, angle: 32 },
-            { x: 520, y: 270, width: 180, angle: 22 }
-        ]
+        hint: "Use multiple surfaces to reach the target!"
     },
     {
         id: 3,
@@ -54,12 +45,7 @@ export const LEVELS = [
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Angle surfaces to bounce upward to the target!",
-        solution: [
-            // Ball at x:100, width 200 (±100), center at 150 = x:50-250
-            { x: 170, y: 430, width: 200, angle: 50 },
-            { x: 480, y: 340, width: 180, angle: 28 }
-        ]
+        hint: "Angle surfaces to bounce upward to the target!"
     },
     {
         id: 4,
@@ -76,13 +62,7 @@ export const LEVELS = [
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Collect both stars - adjust surfaces between bounces!",
-        solution: [
-            // Ball at x:400, width 250 (±125), center at 400 = x:275-525
-            { x: 390, y: 390, width: 250, angle: -18 },
-            { x: 620, y: 310, width: 150, angle: -28 },
-            { x: 220, y: 250, width: 180, angle: 32 }
-        ]
+        hint: "Collect both stars - adjust surfaces between bounces!"
     },
     {
         id: 5,
@@ -100,13 +80,7 @@ export const LEVELS = [
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Three stars! Master surface control to collect them all!",
-        solution: [
-            // Ball at x:100, width 180 (±90), center at 145 = x:55-235
-            { x: 150, y: 360, width: 180, angle: 28 },
-            { x: 420, y: 300, width: 160, angle: 18 },
-            { x: 360, y: 240, width: 140, angle: 22 }
-        ]
+        hint: "Three stars! Master surface control to collect them all!"
     }
 ];
 

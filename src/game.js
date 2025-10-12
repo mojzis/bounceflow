@@ -27,6 +27,12 @@ export class Game {
         this.showAngles = false; // Toggle for showing surface angles
         this.showHints = false; // Toggle for showing solution hints
 
+        // Solver state
+        this.solverRunning = false;
+        this.solverAttempts = [];
+        this.solverBestConfig = null;
+        this.solverCurrentAttempt = 0;
+
         // Replay recording
         this.isRecording = false;
         this.replayData = [];
@@ -297,9 +303,199 @@ export class Game {
     }
 
     toggleHints() {
-        this.showHints = !this.showHints;
-        // Update button text
-        this.hintButton.textContent = this.showHints ? 'Hide Hint (?)' : 'Show Hint (?)';
+        if (!this.solverRunning) {
+            // Start the solver
+            this.startSolver();
+        } else {
+            // Stop the solver
+            this.stopSolver();
+        }
+    }
+
+    startSolver() {
+        this.solverRunning = true;
+        this.solverAttempts = [];
+        this.solverBestConfig = null;
+        this.solverCurrentAttempt = 0;
+        this.hintButton.textContent = 'Solving...';
+        this.hintButton.disabled = true;
+
+        // Start solver loop
+        this.runSolverStep();
+    }
+
+    stopSolver() {
+        this.solverRunning = false;
+        this.hintButton.textContent = 'Show Hint (?)';
+        this.hintButton.disabled = false;
+    }
+
+    runSolverStep() {
+        if (!this.solverRunning) return;
+
+        const level = getLevel(this.currentLevel);
+
+        // Generate a random configuration based on initial setup
+        const config = this.generateRandomConfig(level);
+
+        // Simulate physics with this configuration
+        const result = this.simulateConfiguration(config, level);
+
+        // Store attempt
+        this.solverAttempts.push({
+            config: config,
+            trajectory: result.trajectory,
+            success: result.success,
+            closestDistance: result.closestDistance
+        });
+
+        this.solverCurrentAttempt++;
+
+        // Check if we found a solution
+        if (result.success) {
+            this.solverBestConfig = config;
+            this.solverRunning = false;
+            this.showHints = true;
+            this.hintButton.textContent = `Solution Found! (${this.solverCurrentAttempt} attempts)`;
+            this.hintButton.disabled = false;
+            return;
+        }
+
+        // Keep track of best attempt
+        if (!this.solverBestConfig || result.closestDistance < this.solverBestConfig.closestDistance) {
+            this.solverBestConfig = {
+                ...config,
+                closestDistance: result.closestDistance
+            };
+        }
+
+        // Limit attempts
+        if (this.solverCurrentAttempt >= 50) {
+            this.solverRunning = false;
+            this.showHints = true;
+            this.hintButton.textContent = `Best Try (${this.solverCurrentAttempt} attempts)`;
+            this.hintButton.disabled = false;
+            return;
+        }
+
+        // Continue in next frame
+        setTimeout(() => this.runSolverStep(), 50);
+    }
+
+    generateRandomConfig(level) {
+        // Generate random surface positions based on initial setup
+        const config = level.surfaces.map((surface, index) => {
+            // Add some random variation
+            const angleVariation = (Math.random() - 0.5) * 30; // ±15 degrees
+            const xVariation = (Math.random() - 0.5) * 100; // ±50 pixels
+            const yVariation = (Math.random() - 0.5) * 80; // ±40 pixels
+
+            return {
+                x: surface.x + xVariation,
+                y: surface.y + yVariation,
+                width: surface.width,
+                angle: surface.angle + angleVariation,
+                locked: surface.locked
+            };
+        });
+
+        return config;
+    }
+
+    simulateConfiguration(config, level) {
+        // Create a temporary physics engine
+        const tempEngine = Matter.Engine.create({
+            enableSleeping: false,
+            positionIterations: 10,
+            velocityIterations: 10
+        });
+        const tempWorld = tempEngine.world;
+        tempWorld.gravity.y = 0.5;
+        tempWorld.gravity.scale = 0.001;
+
+        // Create walls
+        const wallOptions = { isStatic: true, friction: 0, restitution: 0.99 };
+        Matter.World.add(tempWorld, [
+            Matter.Bodies.rectangle(this.canvas.width / 2, -25, this.canvas.width, 50, wallOptions),
+            Matter.Bodies.rectangle(this.canvas.width / 2, this.canvas.height + 25, this.canvas.width, 50, wallOptions),
+            Matter.Bodies.rectangle(-25, this.canvas.height / 2, 50, this.canvas.height, wallOptions),
+            Matter.Bodies.rectangle(this.canvas.width + 25, this.canvas.height / 2, 50, this.canvas.height, wallOptions)
+        ]);
+
+        // Create ball
+        const ball = Matter.Bodies.circle(level.ballStart.x, level.ballStart.y, 20, {
+            restitution: 0.95,
+            friction: 0,
+            frictionAir: 0,
+            density: 0.001,
+            label: 'ball'
+        });
+        Matter.World.add(tempWorld, ball);
+
+        // Create surfaces
+        config.forEach(surfaceConfig => {
+            if (!surfaceConfig.locked) {
+                const angleRad = (surfaceConfig.angle * Math.PI) / 180;
+                const surface = Matter.Bodies.rectangle(
+                    surfaceConfig.x,
+                    surfaceConfig.y,
+                    surfaceConfig.width,
+                    20,
+                    {
+                        isStatic: true,
+                        angle: angleRad,
+                        friction: 0,
+                        restitution: 0.99,
+                        label: 'surface'
+                    }
+                );
+                Matter.World.add(tempWorld, surface);
+            }
+        });
+
+        // Simulate for 300 frames (5 seconds at 60fps)
+        const trajectory = [];
+        let closestDistance = Infinity;
+        let success = false;
+
+        for (let i = 0; i < 300; i++) {
+            Matter.Engine.update(tempEngine, 1000 / 60);
+
+            trajectory.push({
+                x: ball.position.x,
+                y: ball.position.y
+            });
+
+            // Check distance to all targets
+            this.targets.forEach(target => {
+                if (!target.collected) {
+                    const dx = ball.position.x - target.x;
+                    const dy = ball.position.y - target.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                    }
+
+                    // Target collection radius
+                    if (distance < 30) {
+                        success = true;
+                    }
+                }
+            });
+
+            if (success) break;
+        }
+
+        // Clean up
+        Matter.World.clear(tempWorld);
+        Matter.Engine.clear(tempEngine);
+
+        return {
+            trajectory,
+            success,
+            closestDistance
+        };
     }
 
     startPlay() {
@@ -558,7 +754,7 @@ export class Game {
         this.targets.forEach(target => target.render(this.ctx));
 
         // Show angle toggle indicator
-        if (this.showAngles && !isReplay) {
+        if (this.showAngles && !isReplay && !this.showHints && !this.solverRunning) {
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             this.ctx.fillRect(10, this.canvas.height - 50, 150, 40);
             this.ctx.fillStyle = '#FFE66D';
@@ -566,8 +762,8 @@ export class Game {
             this.ctx.fillText('Angles: ON (V)', 20, this.canvas.height - 25);
         }
 
-        // Render hint surfaces
-        if (this.showHints && !isReplay) {
+        // Render hint surfaces and solver visualization
+        if (!isReplay && (this.showHints || this.solverRunning)) {
             this.renderHints();
         }
 
@@ -583,61 +779,117 @@ export class Game {
     }
 
     renderHints() {
-        const level = getLevel(this.currentLevel);
-        if (!level || !level.solution) return;
+        if (!this.showHints && !this.solverRunning) return;
 
         const ctx = this.ctx;
 
-        // Draw hint indicator
+        // Draw solver status
         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.fillRect(10, this.canvas.height - 100, 180, 40);
+        ctx.fillRect(10, this.canvas.height - 120, 250, 60);
         ctx.fillStyle = '#4ECDC4';
         ctx.font = 'bold 14px sans-serif';
-        ctx.fillText('💡 Solution Hint (? )', 20, this.canvas.height - 75);
 
-        // Draw ghost surfaces at solution positions
-        level.solution.forEach(solutionSurface => {
-            const angleRad = (solutionSurface.angle * Math.PI) / 180;
-            const halfWidth = solutionSurface.width / 2;
+        if (this.solverRunning) {
+            ctx.fillText(`🔬 Experimenting... (${this.solverCurrentAttempt} tries)`, 20, this.canvas.height - 95);
+        } else if (this.solverBestConfig) {
+            ctx.fillText(`💡 Solution Shown`, 20, this.canvas.height - 95);
+        }
 
-            const x1 = solutionSurface.x - Math.cos(angleRad) * halfWidth;
-            const y1 = solutionSurface.y - Math.sin(angleRad) * halfWidth;
-            const x2 = solutionSurface.x + Math.cos(angleRad) * halfWidth;
-            const y2 = solutionSurface.y + Math.sin(angleRad) * halfWidth;
+        // Show attempts count
+        if (this.solverAttempts.length > 0) {
+            ctx.font = '12px sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.fillText(`Failed: ${this.solverAttempts.filter(a => !a.success).length}`, 20, this.canvas.height - 75);
+        }
 
-            // Draw ghost surface with dashed line
-            ctx.save();
-            ctx.strokeStyle = '#4ECDC4';
-            ctx.lineWidth = 20;
-            ctx.globalAlpha = 0.4;
-            ctx.setLineDash([10, 10]);
-            ctx.lineCap = 'round';
-
+        // Draw last 10 failed attempts as faint trajectories
+        const failedAttempts = this.solverAttempts.filter(a => !a.success).slice(-10);
+        failedAttempts.forEach((attempt, index) => {
+            ctx.strokeStyle = `rgba(255, 100, 100, ${0.1 + (index / 10) * 0.2})`;
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
+
+            attempt.trajectory.forEach((point, i) => {
+                if (i === 0) {
+                    ctx.moveTo(point.x, point.y);
+                } else {
+                    ctx.lineTo(point.x, point.y);
+                }
+            });
             ctx.stroke();
-
-            // Draw center point
-            ctx.globalAlpha = 0.6;
-            ctx.fillStyle = '#4ECDC4';
-            ctx.beginPath();
-            ctx.arc(solutionSurface.x, solutionSurface.y, 6, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Draw angle label
-            ctx.globalAlpha = 0.8;
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-            ctx.fillRect(solutionSurface.x - 30, solutionSurface.y - 35, 60, 22);
-            ctx.fillStyle = '#4ECDC4';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${solutionSurface.angle.toFixed(0)}°`, solutionSurface.x, solutionSurface.y - 18);
-
-            ctx.restore();
         });
 
-        ctx.textAlign = 'left';
+        // Draw best/successful configuration if found
+        if (this.solverBestConfig && this.showHints) {
+            const config = this.solverBestConfig;
+            const successfulAttempt = this.solverAttempts.find(a => a.success);
+
+            // Draw successful trajectory if exists
+            if (successfulAttempt) {
+                ctx.strokeStyle = 'rgba(78, 205, 196, 0.6)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+
+                successfulAttempt.trajectory.forEach((point, i) => {
+                    if (i === 0) {
+                        ctx.moveTo(point.x, point.y);
+                    } else {
+                        ctx.lineTo(point.x, point.y);
+                    }
+                });
+                ctx.stroke();
+            }
+
+            // Draw ghost surfaces at solution positions
+            const level = getLevel(this.currentLevel);
+            level.surfaces.forEach((originalSurface, index) => {
+                if (originalSurface.locked) return;
+
+                const configSurface = Array.isArray(config) ? config[index] : config;
+                if (!configSurface) return;
+
+                const angleRad = (configSurface.angle * Math.PI) / 180;
+                const halfWidth = configSurface.width / 2;
+
+                const x1 = configSurface.x - Math.cos(angleRad) * halfWidth;
+                const y1 = configSurface.y - Math.sin(angleRad) * halfWidth;
+                const x2 = configSurface.x + Math.cos(angleRad) * halfWidth;
+                const y2 = configSurface.y + Math.sin(angleRad) * halfWidth;
+
+                // Draw ghost surface with dashed line
+                ctx.save();
+                ctx.strokeStyle = '#4ECDC4';
+                ctx.lineWidth = 20;
+                ctx.globalAlpha = 0.5;
+                ctx.setLineDash([10, 10]);
+                ctx.lineCap = 'round';
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // Draw center point
+                ctx.globalAlpha = 0.7;
+                ctx.fillStyle = '#4ECDC4';
+                ctx.beginPath();
+                ctx.arc(configSurface.x, configSurface.y, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw angle label
+                ctx.globalAlpha = 0.9;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillRect(configSurface.x - 30, configSurface.y - 35, 60, 22);
+                ctx.fillStyle = '#4ECDC4';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${configSurface.angle.toFixed(0)}°`, configSurface.x, configSurface.y - 18);
+
+                ctx.restore();
+            });
+
+            ctx.textAlign = 'left';
+        }
     }
 
     renderReplay() {
