@@ -10,6 +10,7 @@ import { Bird } from './bird.js';
 import { getLevel, getTotalLevels } from './levels.js';
 import { PhysicsManager } from './game/PhysicsManager.js';
 import { InputManager } from './game/InputManager.js';
+import { SolverSystem } from './game/SolverSystem.js';
 
 export class Game {
     constructor(canvas) {
@@ -42,15 +43,9 @@ export class Game {
         this.hookReleaseProgress = 0;
         this.hookSwayOffset = 0;
 
-        // Solver state
-        this.solverRunning = false;
-        this.solverAttempts = [];
-        this.solverBestConfig = null;
-        this.solverBestDistance = Infinity;
-        this.solverCurrentAttempt = 0;
-        this.solverFoundSolution = false;
-        this.solverTemperature = 1.0; // 1.0 = hot (wild exploration), 0.0 = cold (precise)
-        this.solverErrorVectors = []; // Track failed attempt directions for learning
+        // Solver system
+        this.solver = new SolverSystem(this);
+        // Keep backward compatibility properties
         this.solverMode = 'explore'; // 'explore' or 'refine'
         this.solverUserConfig = null; // Stores user's config for refine mode
 
@@ -216,7 +211,7 @@ export class Game {
         }
 
         // CRITICAL: Stop any running solver before clearing
-        if (this.solverRunning) {
+        if (this.solver.running) {
             this.stopSolver();
         }
 
@@ -240,15 +235,8 @@ export class Game {
         this.replayIndex = 0;
         this.replayButton.style.display = 'none';
 
-        // Clear solver state
-        this.solverRunning = false;
-        this.solverAttempts = [];
-        this.solverBestConfig = null;
-        this.solverBestDistance = Infinity;
-        this.solverCurrentAttempt = 0;
-        this.solverFoundSolution = false;
-        this.solverTemperature = 1.0;
-        this.solverErrorVectors = [];
+        // Clear solver state (reset SolverSystem instance)
+        this.solver = new SolverSystem(this);
         this.solverMode = 'explore';
         this.solverUserConfig = null;
         this.showHints = false;
@@ -403,7 +391,7 @@ export class Game {
     }
 
     toggleHints() {
-        if (!this.solverRunning) {
+        if (!this.solver.running) {
             // Reset to explore mode (in case refine was used before)
             this.solverMode = 'explore';
             this.solverUserConfig = null;
@@ -416,57 +404,52 @@ export class Game {
     }
 
     startSolver() {
-        console.log('🚀 Starting solver in', this.solverMode, 'mode...');
-
         // Mark that solver was used (affects scoring)
         this.usedSolver = true;
 
-        // Clear all previous solver state (important for retries)
-        this.solverRunning = true;
-        this.solverAttempts = [];
-        this.solverBestConfig = null;
-        this.solverBestDistance = Infinity;
-        this.solverCurrentAttempt = 0;
-        this.solverFoundSolution = false;
-        this.showHints = false; // Clear visualization from previous run
-        this.solverErrorVectors = []; // Clear learning from previous run
+        // Start solver with current mode and config
+        this.solver.start(this.solverMode, this.solverUserConfig);
 
-        // Set initial temperature based on mode
-        if (this.solverMode === 'refine') {
-            this.solverTemperature = 0.2; // Start cool for refinement
-        } else {
-            this.solverTemperature = 1.0; // Start hot for exploration
-        }
-
-        if (this.solverMode === 'refine') {
-            this.hintButton.textContent = 'Solving...';
-            this.refineButton.textContent = 'Refining...';
-            this.refineButton.disabled = true;
-            this.hintButton.disabled = true;
-        } else {
-            this.hintButton.textContent = 'Solving...';
-            this.hintButton.disabled = true;
-            this.refineButton.disabled = true;
-        }
-
-        console.log('Solver state:', {
-            running: this.solverRunning,
-            mode: this.solverMode,
-            temperature: this.solverTemperature,
-            attempts: this.solverAttempts.length,
-            currentAttempt: this.solverCurrentAttempt
-        });
-
-        // Start solver loop
-        this.runSolverStep();
+        // Update UI
+        this.updateSolverUI();
     }
 
     stopSolver() {
-        this.solverRunning = false;
-        this.hintButton.textContent = 'Show Hint (?)';
-        this.hintButton.disabled = false;
-        this.refineButton.textContent = 'Refine My Setup';
-        this.refineButton.disabled = false;
+        this.solver.stop();
+        this.updateSolverUI();
+    }
+
+    updateSolverUI() {
+        if (this.solverMode === 'refine') {
+            if (this.solver.running) {
+                this.hintButton.textContent = 'Solving...';
+                this.refineButton.textContent = 'Refining...';
+                this.refineButton.disabled = true;
+                this.hintButton.disabled = true;
+            } else if (this.solver.foundSolution) {
+                this.refineButton.textContent = `Solution Found! (${this.solver.currentAttempt} attempts)`;
+                this.refineButton.disabled = false;
+                this.showHints = true;
+            } else {
+                this.refineButton.textContent = `Best Try (${this.solver.currentAttempt} attempts)`;
+                this.refineButton.disabled = false;
+                this.showHints = true;
+            }
+        } else {
+            if (this.solver.running) {
+                this.hintButton.textContent = 'Solving...';
+                this.hintButton.disabled = true;
+                this.refineButton.disabled = true;
+            } else if (this.solver.foundSolution) {
+                this.hintButton.textContent = `Solution Found! (${this.solver.currentAttempt} attempts)`;
+                this.hintButton.disabled = false;
+                this.showHints = true;
+            } else {
+                this.hintButton.textContent = `Best Try (${this.solver.currentAttempt} attempts)`;
+                this.hintButton.disabled = false;
+                this.showHints = true;
+            }
+        }
     }
 
     startRefineSolver() {
@@ -490,409 +473,6 @@ export class Game {
         this.startSolver();
     }
 
-    runSolverStep() {
-        if (!this.solverRunning) return;
-
-        let config, result;
-        try {
-            const level = getLevel(this.currentLevel);
-
-            // Update temperature (cool down linearly in explore mode)
-            const maxAttempts = this.solverMode === 'refine' ? 30 : 50;
-            if (this.solverMode === 'explore') {
-                this.solverTemperature = 1.0 - (this.solverCurrentAttempt / maxAttempts);
-                this.solverTemperature = Math.max(0, this.solverTemperature);
-            }
-
-            // Generate a random configuration based on initial setup
-            config = this.generateRandomConfig(level);
-            console.log('Solver attempt', this.solverCurrentAttempt + 1, 'temp:', this.solverTemperature.toFixed(2), 'config:', config);
-
-            // Simulate physics with this configuration
-            result = this.simulateConfiguration(config, level);
-            console.log('Result:', result.success ? 'SUCCESS!' : 'failed', 'closest distance:', result.closestDistance.toFixed(1));
-
-            // Store attempt
-            this.solverAttempts.push({
-                config: config,
-                trajectory: result.trajectory,
-                success: result.success,
-                closestDistance: result.closestDistance,
-                collisionData: result.collisionData
-            });
-
-            // Track error vector for failed attempts (learning)
-            if (!result.success && result.trajectory.length > 0) {
-                const ballFinalPos = result.trajectory[result.trajectory.length - 1];
-
-                // Find nearest target
-                let nearestTarget = this.targets[0];
-                let minDist = Infinity;
-                this.targets.forEach(target => {
-                    const dx = target.x - ballFinalPos.x;
-                    const dy = target.y - ballFinalPos.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < minDist) {
-                        minDist = dist;
-                        nearestTarget = target;
-                    }
-                });
-
-                // Calculate error vector (direction from ball to target)
-                const errorVector = {
-                    dx: nearestTarget.x - ballFinalPos.x,
-                    dy: nearestTarget.y - ballFinalPos.y,
-                    magnitude: minDist
-                };
-                this.solverErrorVectors.push(errorVector);
-
-                console.log('Error vector:', errorVector.dx.toFixed(1), errorVector.dy.toFixed(1), 'magnitude:', errorVector.magnitude.toFixed(1));
-            }
-
-            this.solverCurrentAttempt++;
-        } catch (error) {
-            console.error('Solver error:', error);
-            this.stopSolver();
-            this.hintButton.textContent = 'Solver Error';
-            alert('Solver encountered an error. Check browser console for details.');
-            return;
-        }
-
-        // Check if we found a solution
-        if (result.success) {
-            console.log('✅ SOLUTION FOUND after', this.solverCurrentAttempt, 'attempts!');
-            this.solverBestConfig = config;
-            this.solverFoundSolution = true;
-            this.solverRunning = false;
-            this.showHints = true;
-            if (this.solverMode === 'refine') {
-                this.refineButton.textContent = `Solution Found! (${this.solverCurrentAttempt} attempts)`;
-                this.refineButton.disabled = false;
-            } else {
-                this.hintButton.textContent = `Solution Found! (${this.solverCurrentAttempt} attempts)`;
-                this.hintButton.disabled = false;
-            }
-            return;
-        }
-
-        // Keep track of best attempt
-        if (!this.solverBestConfig || result.closestDistance < this.solverBestDistance) {
-            this.solverBestConfig = config;
-            this.solverBestDistance = result.closestDistance;
-        }
-
-        // Limit attempts based on mode
-        const maxAttempts = this.solverMode === 'refine' ? 30 : 50;
-        if (this.solverCurrentAttempt >= maxAttempts) {
-            this.solverRunning = false;
-            this.showHints = true;
-            if (this.solverMode === 'refine') {
-                this.refineButton.textContent = `Best Try (${this.solverCurrentAttempt} attempts)`;
-                this.refineButton.disabled = false;
-            } else {
-                this.hintButton.textContent = `Best Try (${this.solverCurrentAttempt} attempts)`;
-                this.hintButton.disabled = false;
-            }
-            return;
-        }
-
-        // Continue in next frame (slower for visibility)
-        setTimeout(() => this.runSolverStep(), 100);
-    }
-
-    generateRandomConfig(level) {
-        // Calculate average target position for smarter angle generation
-        const avgTargetX = this.targets.reduce((sum, t) => sum + t.x, 0) / this.targets.length;
-        const avgTargetY = this.targets.reduce((sum, t) => sum + t.y, 0) / this.targets.length;
-
-        // Calculate error bias from recent failures (last 10 attempts)
-        let errorBiasX = 0, errorBiasY = 0;
-        if (this.solverErrorVectors.length > 0) {
-            const recentErrors = this.solverErrorVectors.slice(-10);
-            errorBiasX = recentErrors.reduce((sum, e) => sum + e.dx, 0) / recentErrors.length;
-            errorBiasY = recentErrors.reduce((sum, e) => sum + e.dy, 0) / recentErrors.length;
-
-            // Bias strength decreases with temperature (more learning when hot, less when cold)
-            const biasStrength = 0.3 * (1 - this.solverTemperature);
-            errorBiasX *= biasStrength;
-            errorBiasY *= biasStrength;
-        }
-
-        // Temperature-based variation ranges
-        // Hot (temp=1.0): ±200px, ±80° - WILD exploration
-        // Medium (temp=0.5): ±100px, ±40° - moderate
-        // Cold (temp=0.0): ±30px, ±15° - fine-tuning
-        const posVariation = 30 + this.solverTemperature * 170; // 30-200px
-        const angleVariation = 15 + this.solverTemperature * 65; // 15-80°
-
-        // Determine base configuration
-        let baseConfig;
-        if (this.solverMode === 'refine' && this.solverUserConfig) {
-            // Use user's current configuration as base
-            baseConfig = this.solverUserConfig;
-        } else {
-            // Use level's initial configuration
-            baseConfig = level.surfaces;
-        }
-
-        // Generate random surface positions based on base config
-        const config = baseConfig.map((surface, index) => {
-            // Skip locked surfaces - keep them at original position
-            if (surface.locked) {
-                return {
-                    x: surface.x,
-                    y: surface.y,
-                    width: surface.width,
-                    angle: surface.angle,
-                    locked: true
-                };
-            }
-
-            let baseX, baseY, baseAngle;
-
-            // In explore mode, use smart initial calculations
-            if (this.solverMode === 'explore') {
-                if (index === 0) {
-                    // First surface: smart placement to catch falling ball
-                    const ballX = level.ballStart.x;
-                    const ballY = level.ballStart.y;
-
-                    // Calculate horizontal and vertical distance to target
-                    const horizontalDistToTarget = Math.abs(avgTargetX - ballX);
-                    const verticalDistToTarget = Math.abs(avgTargetY - ballY);
-
-                    // Smart intercept distance based on target geometry
-                    let interceptDistance;
-                    if (horizontalDistToTarget > 400) {
-                        // Far target: catch early to preserve energy
-                        interceptDistance = 80 + Math.random() * 60;
-                    } else if (horizontalDistToTarget > 200) {
-                        // Medium distance
-                        interceptDistance = 120 + Math.random() * 80;
-                    } else {
-                        // Close target: can fall further
-                        interceptDistance = 150 + Math.random() * 100;
-                    }
-
-                    // If target is above us, catch earlier to redirect upward
-                    if (avgTargetY < ballY) {
-                        interceptDistance *= 0.6;
-                    }
-
-                    // Place surface below ball
-                    baseX = ballX;
-                    baseY = ballY + interceptDistance;
-
-                    // Smart angle toward target
-                    const directionToTarget = avgTargetX - ballX;
-                    if (directionToTarget > 0) {
-                        // Target right: positive angle
-                        baseAngle = 10 + Math.random() * 60; // 10-70°
-                    } else {
-                        // Target left: negative angle
-                        baseAngle = -70 + Math.random() * 60; // -70 to -10°
-                    }
-                } else {
-                    // Subsequent surfaces: place along predicted path
-                    baseX = surface.x;
-                    baseY = surface.y;
-
-                    // Angle toward target
-                    const directionToTarget = avgTargetX - baseX;
-                    if (Math.abs(directionToTarget) < 50) {
-                        baseAngle = surface.angle; // Keep similar
-                    } else if (directionToTarget > 0) {
-                        baseAngle = 30; // Aim right
-                    } else {
-                        baseAngle = -30; // Aim left
-                    }
-                }
-            } else {
-                // Refine mode: use current surface position as base
-                baseX = surface.x;
-                baseY = surface.y;
-                baseAngle = surface.angle;
-            }
-
-            // Apply temperature-based variation
-            const xVar = (Math.random() - 0.5) * posVariation * 2;
-            const yVar = (Math.random() - 0.5) * posVariation * 2;
-            const angleVar = (Math.random() - 0.5) * angleVariation * 2;
-
-            // Apply error bias (learning from failures)
-            let finalX = baseX + xVar + errorBiasX;
-            let finalY = baseY + yVar + errorBiasY;
-            const finalAngle = baseAngle + angleVar;
-
-            // CONSTRAINT: First surface must stay at or below ball (gravity pulls down)
-            if (this.solverMode === 'explore' && index === 0) {
-                const ballY = level.ballStart.y;
-                // Allow surface to be at most 20px above ball (for shallow catches)
-                finalY = Math.max(ballY - 20, finalY);
-            }
-
-            return {
-                x: finalX,
-                y: finalY,
-                width: surface.width,
-                angle: finalAngle,
-                locked: false
-            };
-        });
-
-        return config;
-    }
-
-    simulateConfiguration(config, level) {
-        // Create a temporary physics engine
-        const tempEngine = Matter.Engine.create({
-            enableSleeping: false,
-            positionIterations: 10,
-            velocityIterations: 10
-        });
-        const tempWorld = tempEngine.world;
-        tempWorld.gravity.y = 0.5;
-        tempWorld.gravity.scale = 0.001;
-
-        // Create walls
-        const wallOptions = { isStatic: true, friction: 0, restitution: 0.99 };
-        Matter.World.add(tempWorld, [
-            Matter.Bodies.rectangle(this.canvas.width / 2, -25, this.canvas.width, 50, wallOptions),
-            Matter.Bodies.rectangle(this.canvas.width / 2, this.canvas.height + 25, this.canvas.width, 50, wallOptions),
-            Matter.Bodies.rectangle(-25, this.canvas.height / 2, 50, this.canvas.height, wallOptions),
-            Matter.Bodies.rectangle(this.canvas.width + 25, this.canvas.height / 2, 50, this.canvas.height, wallOptions)
-        ]);
-
-        // Create ball
-        const ball = Matter.Bodies.circle(level.ballStart.x, level.ballStart.y, 20, {
-            restitution: 0.95,
-            friction: 0,
-            frictionAir: 0,
-            density: 0.001,
-            label: 'ball'
-        });
-        Matter.World.add(tempWorld, ball);
-
-        // Create surfaces (including locked ones for accurate simulation)
-        const surfaceBodies = [];
-        config.forEach(surfaceConfig => {
-            const angleRad = (surfaceConfig.angle * Math.PI) / 180;
-            const surface = Matter.Bodies.rectangle(
-                surfaceConfig.x,
-                surfaceConfig.y,
-                surfaceConfig.width,
-                20,
-                {
-                    isStatic: true,
-                    angle: angleRad,
-                    friction: 0,
-                    restitution: 0.99,
-                    label: 'surface'
-                }
-            );
-            surfaceBodies.push(surface);
-            Matter.World.add(tempWorld, surface);
-        });
-
-        // Track collision data
-        const collisionData = [];
-        Matter.Events.on(tempEngine, 'collisionStart', (event) => {
-            event.pairs.forEach(pair => {
-                // Check if ball collided with a surface
-                const isBallCollision = pair.bodyA === ball || pair.bodyB === ball;
-                if (!isBallCollision) return;
-
-                // Find which body is the surface
-                const otherBody = pair.bodyA === ball ? pair.bodyB : pair.bodyA;
-
-                // Only record surface collisions, not walls
-                const surfaceIndex = surfaceBodies.indexOf(otherBody);
-                if (surfaceIndex === -1) return;
-
-                // Get collision point
-                const collision = pair.collision;
-                const contactPoint = collision.supports[0] || { x: ball.position.x, y: ball.position.y };
-
-                // Calculate normal vector (perpendicular to surface)
-                const normal = collision.normal;
-
-                // Get velocity before collision
-                const velocityBefore = { x: ball.velocity.x, y: ball.velocity.y };
-
-                // Calculate impact speed
-                const impactSpeed = Math.sqrt(velocityBefore.x * velocityBefore.x + velocityBefore.y * velocityBefore.y);
-
-                // Store collision data
-                collisionData.push({
-                    x: contactPoint.x,
-                    y: contactPoint.y,
-                    normalX: normal.x,
-                    normalY: normal.y,
-                    velocityBeforeX: velocityBefore.x,
-                    velocityBeforeY: velocityBefore.y,
-                    impactSpeed: impactSpeed,
-                    surfaceAngle: config[surfaceIndex].angle
-                });
-            });
-        });
-
-        // Simulate for 300 frames (5 seconds at 60fps)
-        const trajectory = [];
-        let closestDistance = Infinity;
-        let success = false;
-
-        for (let i = 0; i < 300; i++) {
-            Matter.Engine.update(tempEngine, 1000 / 60);
-
-            // Safety cap to match actual game and prevent physics instability
-            const maxVelocity = 100;
-            const velocity = ball.velocity;
-            const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-            if (speed > maxVelocity) {
-                const scale = maxVelocity / speed;
-                Matter.Body.setVelocity(ball, {
-                    x: velocity.x * scale,
-                    y: velocity.y * scale
-                });
-            }
-
-            trajectory.push({
-                x: ball.position.x,
-                y: ball.position.y
-            });
-
-            // Check distance to all targets
-            this.targets.forEach(target => {
-                if (!target.collected) {
-                    const dx = ball.position.x - target.x;
-                    const dy = ball.position.y - target.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < closestDistance) {
-                        closestDistance = distance;
-                    }
-
-                    // Target collection radius
-                    if (distance < 30) {
-                        success = true;
-                    }
-                }
-            });
-
-            if (success) break;
-        }
-
-        // Clean up
-        Matter.World.clear(tempWorld);
-        Matter.Engine.clear(tempEngine);
-
-        return {
-            trajectory,
-            success,
-            closestDistance,
-            collisionData
-        };
-    }
 
     startPlay() {
         if (this.currentState === this.states.REPLAY) {
@@ -1378,7 +958,7 @@ export class Game {
         }
 
         // Show angle toggle indicator
-        if (this.showAngles && !isReplay && !this.showHints && !this.solverRunning) {
+        if (this.showAngles && !isReplay && !this.showHints && !this.solver.running) {
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             this.ctx.fillRect(10, this.canvas.height - 50, 150, 40);
             this.ctx.fillStyle = '#FFE66D';
@@ -1388,7 +968,7 @@ export class Game {
 
         // Render hint surfaces and solver visualization
         // In debug mode, show hints even during replay
-        if ((this.debugMode || !isReplay) && (this.showHints || this.solverRunning)) {
+        if ((this.debugMode || !isReplay) && (this.showHints || this.solver.running)) {
             this.renderHints();
         }
 
@@ -1581,7 +1161,7 @@ export class Game {
 
     renderHints() {
         // Only render if solver is actually running or we have results to show
-        if (!this.solverRunning && !this.solverBestConfig) return;
+        if (!this.solver.running && !this.solver.bestConfig) return;
 
         const ctx = this.ctx;
 
@@ -1591,11 +1171,11 @@ export class Game {
         ctx.fillStyle = '#4ECDC4';
         ctx.font = 'bold 14px sans-serif';
 
-        if (this.solverRunning) {
-            const text = `🔬 Experimenting... (${this.solverCurrentAttempt} tries)`;
+        if (this.solver.running) {
+            const text = `🔬 Experimenting... (${this.solver.currentAttempt} tries)`;
             ctx.fillText(text, 20, this.canvas.height - 95);
-        } else if (this.solverBestConfig) {
-            if (this.solverFoundSolution) {
+        } else if (this.solver.bestConfig) {
+            if (this.solver.foundSolution) {
                 ctx.fillStyle = '#4ECDC4';
                 ctx.fillText(`✅ Solution Found!`, 20, this.canvas.height - 95);
             } else {
@@ -1605,14 +1185,14 @@ export class Game {
         }
 
         // Show attempts count
-        if (this.solverAttempts.length > 0) {
+        if (this.solver.attempts.length > 0) {
             ctx.font = '12px sans-serif';
             ctx.fillStyle = 'white';
-            ctx.fillText(`Failed: ${this.solverAttempts.filter(a => !a.success).length}`, 20, this.canvas.height - 75);
+            ctx.fillText(`Failed: ${this.solver.attempts.filter(a => !a.success).length}`, 20, this.canvas.height - 75);
         }
 
         // Draw last 20 failed attempts as visible trajectories
-        const failedAttempts = this.solverAttempts.filter(a => !a.success).slice(-20);
+        const failedAttempts = this.solver.attempts.filter(a => !a.success).slice(-20);
         failedAttempts.forEach((attempt, index) => {
             // More visible - opacity from 0.2 to 0.5
             ctx.strokeStyle = `rgba(255, 100, 100, ${0.2 + (index / 20) * 0.3})`;
@@ -1630,8 +1210,8 @@ export class Game {
         });
 
         // Draw current attempt being tested (if solver is running)
-        if (this.solverRunning && this.solverAttempts.length > 0) {
-            const currentAttempt = this.solverAttempts[this.solverAttempts.length - 1];
+        if (this.solver.running && this.solver.attempts.length > 0) {
+            const currentAttempt = this.solver.attempts[this.solver.attempts.length - 1];
 
             // Show surfaces being tested
             const level = getLevel(this.currentLevel);
@@ -1679,10 +1259,10 @@ export class Game {
         }
 
         // Draw best/successful configuration if found
-        if (this.solverBestConfig && this.showHints) {
-            const config = this.solverBestConfig;
-            const successfulAttempt = this.solverAttempts.find(a => a.success);
-            const bestAttempt = successfulAttempt || this.solverAttempts.find(a => a.config === this.solverBestConfig);
+        if (this.solver.bestConfig && this.showHints) {
+            const config = this.solver.bestConfig;
+            const successfulAttempt = this.solver.attempts.find(a => a.success);
+            const bestAttempt = successfulAttempt || this.solver.attempts.find(a => a.config === this.solver.bestConfig);
 
             // Draw successful trajectory if exists
             if (successfulAttempt) {
