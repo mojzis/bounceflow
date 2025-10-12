@@ -9,6 +9,7 @@ import { Target } from './target.js';
 import { Bird } from './bird.js';
 import { getLevel, getTotalLevels } from './levels.js';
 import { PhysicsManager } from './game/PhysicsManager.js';
+import { InputManager } from './game/InputManager.js';
 
 export class Game {
     constructor(canvas) {
@@ -79,14 +80,7 @@ export class Game {
         this.selectedSurfaceIndex = -1; // For keyboard control
 
         // Input handling
-        this.mousePos = { x: 0, y: 0 };
-        this.isMouseDown = false;
-        this.isRightClick = false;
-        this.touches = new Map();
-
-        // Keyboard acceleration for surface control
-        this.heldKeys = new Set();
-        this.keyHoldDuration = new Map(); // Track how long each key has been held
+        this.input = new InputManager(this);
 
         // UI elements
         this.setupUI();
@@ -169,10 +163,9 @@ export class Game {
             const isMovementKey = ['w', 'W', 'a', 'A', 's', 'S', 'd', 'D', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'q', 'Q', 'e', 'E'].includes(e.key);
 
             if (isMovementKey) {
-                if (!e.repeat && !this.heldKeys.has(e.key)) {
+                if (!e.repeat && !this.input.heldKeys.has(e.key)) {
                     // Start tracking this key
-                    this.heldKeys.add(e.key);
-                    this.keyHoldDuration.set(e.key, { startTime: Date.now(), shiftKey: e.shiftKey });
+                    this.input.trackKeyDown(e.key, e.shiftKey);
                 }
                 e.preventDefault();
                 return;
@@ -209,9 +202,8 @@ export class Game {
 
         // Keyup handler to clear held keys
         document.addEventListener('keyup', (e) => {
-            if (this.heldKeys.has(e.key)) {
-                this.heldKeys.delete(e.key);
-                this.keyHoldDuration.delete(e.key);
+            if (this.input.heldKeys.has(e.key)) {
+                this.input.trackKeyUp(e.key);
             }
         });
     }
@@ -1225,7 +1217,7 @@ export class Game {
         });
 
         this.surfaces.forEach(surface => {
-            surface.handleMouseMove(this.mousePos.x, this.mousePos.y);
+            surface.handleMouseMove(this.input.mousePos.x, this.input.mousePos.y);
         });
 
         // Update bird obstacle
@@ -1311,71 +1303,7 @@ export class Game {
     }
 
     processHeldKeys() {
-        // Skip if no surface selected
-        if (this.selectedSurfaceIndex < 0 || this.selectedSurfaceIndex >= this.surfaces.length) {
-            return;
-        }
-
-        const now = Date.now();
-
-        // Process each held key
-        for (const [key, data] of this.keyHoldDuration.entries()) {
-            const holdDuration = now - data.startTime;
-
-            // Calculate acceleration based on hold duration
-            // 0-200ms: 1px/frame (fine control)
-            // 200-1000ms: ramp from 1 to 5px/frame (acceleration)
-            // 1000ms+: 5px/frame (max speed)
-            let speed;
-            if (holdDuration < 200) {
-                speed = 1;
-            } else if (holdDuration < 1000) {
-                // Linear ramp from 1 to 5 over 800ms
-                speed = 1 + ((holdDuration - 200) / 800) * 4;
-            } else {
-                speed = 5;
-            }
-
-            // Apply movement or rotation based on key
-            const shiftMultiplier = data.shiftKey ? 5 : 1;
-            const movementAmount = speed * shiftMultiplier;
-
-            // Rotation uses fixed increments (no acceleration)
-            const rotationAmount = data.shiftKey ? 5 : 1;
-
-            // Movement keys
-            if (key === 'w' || key === 'W' || key === 'ArrowUp') {
-                this.moveSelectedSurface(0, -movementAmount);
-            } else if (key === 's' || key === 'S' || key === 'ArrowDown') {
-                this.moveSelectedSurface(0, movementAmount);
-            } else if (key === 'a' || key === 'A') {
-                this.moveSelectedSurface(-movementAmount, 0);
-            } else if (key === 'd' || key === 'D') {
-                this.moveSelectedSurface(movementAmount, 0);
-            } else if (key === 'ArrowLeft') {
-                if (data.shiftKey) {
-                    // Shift + Left Arrow = Rotate left
-                    this.rotateSelectedSurface(-rotationAmount);
-                } else {
-                    // Left Arrow alone = Move left
-                    this.moveSelectedSurface(-movementAmount, 0);
-                }
-            } else if (key === 'ArrowRight') {
-                if (data.shiftKey) {
-                    // Shift + Right Arrow = Rotate right
-                    this.rotateSelectedSurface(rotationAmount);
-                } else {
-                    // Right Arrow alone = Move right
-                    this.moveSelectedSurface(movementAmount, 0);
-                }
-            }
-            // Rotation keys (Q/E) - fixed increments, no acceleration
-            else if (key === 'q' || key === 'Q') {
-                this.rotateSelectedSurface(-rotationAmount);
-            } else if (key === 'e' || key === 'E') {
-                this.rotateSelectedSurface(rotationAmount);
-            }
-        }
+        this.input.processHeldKeys();
     }
 
     updateUI() {
@@ -2076,82 +2004,29 @@ export class Game {
         }
     }
 
-    // Input handling
+    // Input handling - delegate to InputManager
     handleMouseDown(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        this.isMouseDown = true;
-        this.isRightClick = e.button === 2;
-        this.mousePos = { x, y };
-
-        // Check surface interactions
-        for (const surface of this.surfaces) {
-            if (surface.handleMouseDown(x, y, this.isRightClick)) {
-                this.canvas.classList.add('dragging');
-                break;
-            }
-        }
+        this.input.handleMouseDown(e);
     }
 
     handleMouseMove(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        this.mousePos = {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
-        };
+        this.input.handleMouseMove(e);
     }
 
     handleMouseUp(e) {
-        this.isMouseDown = false;
-        this.canvas.classList.remove('dragging');
-
-        this.surfaces.forEach(surface => surface.handleMouseUp());
+        this.input.handleMouseUp(e);
     }
 
     handleTouchStart(e) {
-        e.preventDefault();
-        const rect = this.canvas.getBoundingClientRect();
-
-        for (const touch of e.changedTouches) {
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
-
-            this.touches.set(touch.identifier, { x, y });
-
-            // Check surface interactions
-            for (const surface of this.surfaces) {
-                if (surface.handleTouchStart(x, y)) {
-                    break;
-                }
-            }
-        }
+        this.input.handleTouchStart(e);
     }
 
     handleTouchMove(e) {
-        e.preventDefault();
-        const rect = this.canvas.getBoundingClientRect();
-
-        for (const touch of e.changedTouches) {
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
-
-            this.touches.set(touch.identifier, { x, y });
-            this.mousePos = { x, y };
-
-            this.surfaces.forEach(surface => surface.handleTouchMove(x, y));
-        }
+        this.input.handleTouchMove(e);
     }
 
     handleTouchEnd(e) {
-        e.preventDefault();
-
-        for (const touch of e.changedTouches) {
-            this.touches.delete(touch.identifier);
-        }
-
-        this.surfaces.forEach(surface => surface.handleTouchEnd());
+        this.input.handleTouchEnd(e);
     }
 
     // Main game loop
