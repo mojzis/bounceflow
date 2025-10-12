@@ -48,21 +48,30 @@ import { SolverSystem } from './SolverSystem.js';
 import { RenderingSystem } from './RenderingSystem.js';
 import { UIManager } from './UIManager.js';
 import { LevelManager } from './LevelManager.js';
+import { StateController } from './StateController.js';
 
 export class Game {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
 
-        // Game state
+        // State management
+        this.stateController = new StateController(this);
+
+        // DEPRECATED: Keep for backward compatibility
         this.states = {
-            MENU: 'menu',
-            PLAYING: 'playing',
-            PAUSED: 'paused',
-            WON: 'won',
-            REPLAY: 'replay'
+            MENU: 'MENU',
+            PLAYING: 'PLAYING',
+            PAUSED: 'PAUSED',
+            WON: 'WON',
+            REPLAY: 'REPLAY'
         };
-        this.currentState = this.states.MENU;
+
+        // Getter that reads from StateController
+        Object.defineProperty(this, 'currentState', {
+            get: () => this.stateController.state,
+            configurable: true
+        });
         this.currentLevel = 1;
         this.attempts = 0;
         this.showAngles = false; // Toggle for showing surface angles
