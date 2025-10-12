@@ -1349,15 +1349,27 @@ export class Game {
                 this.moveSelectedSurface(-amount, 0);
             } else if (key === 'd' || key === 'D') {
                 this.moveSelectedSurface(amount, 0);
+            } else if (key === 'ArrowLeft') {
+                if (data.shiftKey) {
+                    // Shift + Left Arrow = Rotate left
+                    this.rotateSelectedSurface(-amount);
+                } else {
+                    // Left Arrow alone = Move left
+                    this.moveSelectedSurface(-amount, 0);
+                }
+            } else if (key === 'ArrowRight') {
+                if (data.shiftKey) {
+                    // Shift + Right Arrow = Rotate right
+                    this.rotateSelectedSurface(amount);
+                } else {
+                    // Right Arrow alone = Move right
+                    this.moveSelectedSurface(amount, 0);
+                }
             }
-            // Rotation keys
+            // Rotation keys (Q/E)
             else if (key === 'q' || key === 'Q') {
                 this.rotateSelectedSurface(-amount);
             } else if (key === 'e' || key === 'E') {
-                this.rotateSelectedSurface(amount);
-            } else if (key === 'ArrowLeft') {
-                this.rotateSelectedSurface(-amount);
-            } else if (key === 'ArrowRight') {
                 this.rotateSelectedSurface(amount);
             }
         }
