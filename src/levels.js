@@ -22,12 +22,11 @@ export const LEVELS = [
         name: "Double Bounce",
         ballStart: { x: 100, y: 100 },
         surfaces: [
-            { x: 150, y: 500, width: 200, angle: 0, locked: true },
-            { x: 400, y: 450, width: 180, angle: -20, locked: false },
-            { x: 650, y: 400, width: 150, angle: 15, locked: false }
+            { x: 300, y: 400, width: 200, angle: -20, locked: false },
+            { x: 600, y: 350, width: 180, angle: 15, locked: false }
         ],
         targets: [
-            { x: 700, y: 150 }
+            { x: 700, y: 250 }
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
