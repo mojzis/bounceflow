@@ -173,6 +173,104 @@ export const LEVELS = [
         propertyPattern: 'static',
         cycleSpeed: 0,
         hint: "The ultimate challenge - collect all four stars!"
+    },
+    {
+        id: 11,
+        name: "Zigzag",
+        ballStart: { x: 100, y: 80 },
+        surfaces: [
+            { x: 200, y: 200, width: 140, angle: -45, locked: true },
+            { x: 380, y: 280, width: 140, angle: 45, locked: true },
+            { x: 560, y: 360, width: 140, angle: -45, locked: true },
+            { x: 300, y: 400, width: 120, angle: 30, locked: false },
+            { x: 500, y: 450, width: 120, angle: -30, locked: false }
+        ],
+        targets: [
+            { x: 680, y: 420 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Navigate the zigzag obstacle course!"
+    },
+    {
+        id: 12,
+        name: "The Catapult",
+        ballStart: { x: 150, y: 400 },
+        surfaces: [
+            { x: 250, y: 470, width: 200, angle: 65, locked: false },
+            { x: 500, y: 200, width: 180, angle: -20, locked: false },
+            { x: 650, y: 350, width: 140, angle: 45, locked: false }
+        ],
+        targets: [
+            { x: 700, y: 150 },
+            { x: 400, y: 120 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Launch high with steep angles!"
+    },
+    {
+        id: 13,
+        name: "Precision Strike",
+        ballStart: { x: 400, y: 100 },
+        surfaces: [
+            { x: 220, y: 280, width: 160, angle: 15, locked: true },
+            { x: 580, y: 280, width: 160, angle: -15, locked: true },
+            { x: 400, y: 420, width: 100, angle: 0, locked: false },
+            { x: 300, y: 350, width: 80, angle: 30, locked: false },
+            { x: 500, y: 350, width: 80, angle: -30, locked: false }
+        ],
+        targets: [
+            { x: 400, y: 200 },
+            { x: 250, y: 380 },
+            { x: 550, y: 380 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Thread through tight gaps with precise angles!"
+    },
+    {
+        id: 14,
+        name: "Multi-Layer",
+        ballStart: { x: 100, y: 100 },
+        surfaces: [
+            { x: 200, y: 200, width: 180, angle: 0, locked: true },
+            { x: 200, y: 320, width: 180, angle: 0, locked: true },
+            { x: 200, y: 440, width: 180, angle: 0, locked: true },
+            { x: 450, y: 250, width: 120, angle: 45, locked: false },
+            { x: 450, y: 380, width: 120, angle: -45, locked: false },
+            { x: 650, y: 300, width: 100, angle: 30, locked: false }
+        ],
+        targets: [
+            { x: 700, y: 150 },
+            { x: 700, y: 350 },
+            { x: 700, y: 450 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Bounce between the layers to collect all stars!"
+    },
+    {
+        id: 15,
+        name: "The Gauntlet",
+        ballStart: { x: 50, y: 100 },
+        surfaces: [
+            { x: 150, y: 300, width: 140, angle: 50, locked: false },
+            { x: 280, y: 450, width: 120, angle: -30, locked: true },
+            { x: 420, y: 350, width: 140, angle: 40, locked: false },
+            { x: 560, y: 250, width: 100, angle: -50, locked: true },
+            { x: 680, y: 380, width: 120, angle: 35, locked: false },
+            { x: 400, y: 180, width: 100, angle: 0, locked: false }
+        ],
+        targets: [
+            { x: 200, y: 200 },
+            { x: 450, y: 250 },
+            { x: 680, y: 200 },
+            { x: 750, y: 320 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Master the gauntlet - precision and patience required!"
     }
 ];
 

@@ -926,9 +926,21 @@ export class Game {
             this.hookReleasing = true;
             this.hookReleaseProgress = 0;
 
+            // Calculate hook swing velocity to transfer to ball
+            // Sway is: Math.sin(Date.now() / 800) * 10
+            // Velocity is derivative: cos(t/800) * (10/800) * 1000 = cos(t/800) * 12.5
+            const swayVelocity = Math.cos(Date.now() / 800) * 12.5;
+
             // Delay ball activation for hook animation
             setTimeout(() => {
                 this.ball.activate();
+
+                // Transfer swing momentum to ball (horizontal velocity)
+                Matter.Body.setVelocity(this.ball.body, {
+                    x: swayVelocity * 0.15, // Scale down for gameplay feel
+                    y: 0
+                });
+
                 this.currentState = this.states.PLAYING;
                 this.hookReleasing = false;
             }, 300); // 300ms animation
