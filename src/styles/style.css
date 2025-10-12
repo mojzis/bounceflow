@@ -135,6 +135,16 @@ button {
     padding: 8px 16px;
 }
 
+.btn-hint {
+    background: #4ECDC4;
+    color: white;
+}
+
+.btn-hint:hover {
+    background: #3db8af;
+    transform: translateY(-2px);
+}
+
 .btn-replay {
     background: #FFE66D;
     color: #333;

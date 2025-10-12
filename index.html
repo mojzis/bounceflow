@@ -22,6 +22,7 @@
                 <button id="replayButton" class="btn-replay" style="display: none;">Watch Replay</button>
                 <button id="dropButton" class="btn-secondary">Drop Ball (Space)</button>
                 <button id="restartButton" class="btn-secondary">Restart (R)</button>
+                <button id="hintButton" class="btn-hint">Show Hint (?)</button>
                 <div id="level-info">Level <span id="level-number">1</span></div>
                 <button id="helpButton" class="btn-help">Help (H)</button>
             </div>
@@ -60,6 +61,7 @@
                         <div><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> Move surface</div>
                         <div><kbd>Space</kbd> Start ball / Drop ball (during play)</div>
                         <div><kbd>V</kbd> Toggle angle display</div>
+                        <div><kbd>?</kbd> Toggle solution hint</div>
                         <div><kbd>R</kbd> Restart level</div>
                         <div><kbd>H</kbd> Toggle this help</div>
                     </div>
@@ -95,12 +97,14 @@
                 </div>
 
                 <div class="help-section">
-                    <h2>💡 Tips</h2>
+                    <h2>💡 Tips & Hints</h2>
                     <ul>
                         <li>Surfaces are thicker than they look - collision detection is generous</li>
                         <li>You can adjust surfaces while the ball is bouncing</li>
                         <li>Try different angles - there are multiple solutions!</li>
-                        <li>Watch the elasticity bar in Level 2+ to time your moves</li>
+                        <li><strong>Stuck?</strong> Press <kbd>?</kbd> or click "Show Hint" to see a working solution</li>
+                        <li>Ghost surfaces (dashed cyan lines) show where to position your surfaces</li>
+                        <li>Match the angles shown on the hints to solve the level</li>
                     </ul>
                 </div>
 

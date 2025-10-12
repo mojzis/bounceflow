@@ -15,7 +15,10 @@ export const LEVELS = [
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Position the surface, then press Space to release the ball!"
+        hint: "Position the surface, then press Space to release the ball!",
+        solution: [
+            { x: 400, y: 420, width: 300, angle: 25 }
+        ]
     },
     {
         id: 2,
@@ -30,7 +33,11 @@ export const LEVELS = [
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Use multiple surfaces to reach the target!"
+        hint: "Use multiple surfaces to reach the target!",
+        solution: [
+            { x: 250, y: 380, width: 200, angle: 35 },
+            { x: 550, y: 320, width: 180, angle: 20 }
+        ]
     },
     {
         id: 3,
@@ -41,11 +48,15 @@ export const LEVELS = [
             { x: 550, y: 300, width: 180, angle: -30, locked: false }
         ],
         targets: [
-            { x: 650, y: 200 }
+            { x: 650, y: 280 }
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Angle surfaces to bounce upward to the target!"
+        hint: "Angle surfaces to bounce upward to the target!",
+        solution: [
+            { x: 280, y: 420, width: 200, angle: 50 },
+            { x: 500, y: 340, width: 180, angle: 30 }
+        ]
     },
     {
         id: 4,
@@ -62,7 +73,12 @@ export const LEVELS = [
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Collect both stars - adjust surfaces between bounces!"
+        hint: "Collect both stars - adjust surfaces between bounces!",
+        solution: [
+            { x: 320, y: 420, width: 250, angle: -15 },
+            { x: 580, y: 360, width: 150, angle: -35 },
+            { x: 180, y: 280, width: 180, angle: 40 }
+        ]
     },
     {
         id: 5,
@@ -80,7 +96,12 @@ export const LEVELS = [
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Three stars! Master surface control to collect them all!"
+        hint: "Three stars! Master surface control to collect them all!",
+        solution: [
+            { x: 280, y: 380, width: 180, angle: 35 },
+            { x: 480, y: 340, width: 160, angle: 15 },
+            { x: 400, y: 280, width: 140, angle: 30 }
+        ]
     }
 ];
 

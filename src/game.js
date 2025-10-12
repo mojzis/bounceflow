@@ -25,6 +25,7 @@ export class Game {
         this.currentLevel = 1;
         this.attempts = 0;
         this.showAngles = false; // Toggle for showing surface angles
+        this.showHints = false; // Toggle for showing solution hints
 
         // Replay recording
         this.isRecording = false;
@@ -101,6 +102,7 @@ export class Game {
         this.elasticityFill = document.getElementById('elasticity-fill');
         this.helpOverlay = document.getElementById('help-overlay');
         this.helpButton = document.getElementById('helpButton');
+        this.hintButton = document.getElementById('hintButton');
         this.closeHelpButton = document.getElementById('close-help');
         this.victoryOverlay = document.getElementById('victory-overlay');
         this.victoryMessage = document.getElementById('victory-message');
@@ -111,6 +113,7 @@ export class Game {
         this.dropButton.addEventListener('click', () => this.dropBall());
         this.restartButton.addEventListener('click', () => this.restart());
         this.replayButton.addEventListener('click', () => this.startReplay());
+        this.hintButton.addEventListener('click', () => this.toggleHints());
         this.helpButton.addEventListener('click', () => this.toggleHelp());
         this.closeHelpButton.addEventListener('click', () => this.hideHelp());
 
@@ -172,6 +175,10 @@ export class Game {
             } else if (e.key === 'v' || e.key === 'V') {
                 // Toggle angle display
                 this.showAngles = !this.showAngles;
+                e.preventDefault();
+            } else if (e.key === '?' || e.key === '/') {
+                // Toggle hint display
+                this.showHints = !this.showHints;
                 e.preventDefault();
             }
         });
@@ -287,6 +294,12 @@ export class Game {
 
     hideHelp() {
         this.helpOverlay.classList.add('hidden');
+    }
+
+    toggleHints() {
+        this.showHints = !this.showHints;
+        // Update button text
+        this.hintButton.textContent = this.showHints ? 'Hide Hint (?)' : 'Show Hint (?)';
     }
 
     startPlay() {
@@ -553,6 +566,11 @@ export class Game {
             this.ctx.fillText('Angles: ON (V)', 20, this.canvas.height - 25);
         }
 
+        // Render hint surfaces
+        if (this.showHints && !isReplay) {
+            this.renderHints();
+        }
+
         // Render replay mode
         if (this.currentState === this.states.REPLAY) {
             this.renderReplay();
@@ -562,6 +580,64 @@ export class Game {
                 this.ball.render(this.ctx);
             }
         }
+    }
+
+    renderHints() {
+        const level = getLevel(this.currentLevel);
+        if (!level || !level.solution) return;
+
+        const ctx = this.ctx;
+
+        // Draw hint indicator
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(10, this.canvas.height - 100, 180, 40);
+        ctx.fillStyle = '#4ECDC4';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText('💡 Solution Hint (? )', 20, this.canvas.height - 75);
+
+        // Draw ghost surfaces at solution positions
+        level.solution.forEach(solutionSurface => {
+            const angleRad = (solutionSurface.angle * Math.PI) / 180;
+            const halfWidth = solutionSurface.width / 2;
+
+            const x1 = solutionSurface.x - Math.cos(angleRad) * halfWidth;
+            const y1 = solutionSurface.y - Math.sin(angleRad) * halfWidth;
+            const x2 = solutionSurface.x + Math.cos(angleRad) * halfWidth;
+            const y2 = solutionSurface.y + Math.sin(angleRad) * halfWidth;
+
+            // Draw ghost surface with dashed line
+            ctx.save();
+            ctx.strokeStyle = '#4ECDC4';
+            ctx.lineWidth = 20;
+            ctx.globalAlpha = 0.4;
+            ctx.setLineDash([10, 10]);
+            ctx.lineCap = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Draw center point
+            ctx.globalAlpha = 0.6;
+            ctx.fillStyle = '#4ECDC4';
+            ctx.beginPath();
+            ctx.arc(solutionSurface.x, solutionSurface.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw angle label
+            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(solutionSurface.x - 30, solutionSurface.y - 35, 60, 22);
+            ctx.fillStyle = '#4ECDC4';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${solutionSurface.angle.toFixed(0)}°`, solutionSurface.x, solutionSurface.y - 18);
+
+            ctx.restore();
+        });
+
+        ctx.textAlign = 'left';
     }
 
     renderReplay() {
