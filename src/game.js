@@ -6,6 +6,7 @@ import * as Matter from 'matter-js';
 import { Ball } from './ball.js';
 import { Surface } from './surface.js';
 import { Target } from './target.js';
+import { Bird } from './bird.js';
 import { getLevel, getTotalLevels } from './levels.js';
 
 export class Game {
@@ -26,6 +27,18 @@ export class Game {
         this.attempts = 0;
         this.showAngles = false; // Toggle for showing surface angles
         this.showHints = false; // Toggle for showing solution hints
+        this.debugMode = false; // Debug mode: show solver + replay together
+
+        // Scoring system
+        this.levelStartTime = 0;
+        this.levelTime = 0; // Time in seconds
+        this.usedSolver = false; // Track if player used solver
+        this.currentScore = 0;
+
+        // Hook animation
+        this.hookReleasing = false;
+        this.hookReleaseProgress = 0;
+        this.hookSwayOffset = 0;
 
         // Solver state
         this.solverRunning = false;
@@ -34,6 +47,10 @@ export class Game {
         this.solverBestDistance = Infinity;
         this.solverCurrentAttempt = 0;
         this.solverFoundSolution = false;
+        this.solverTemperature = 1.0; // 1.0 = hot (wild exploration), 0.0 = cold (precise)
+        this.solverErrorVectors = []; // Track failed attempt directions for learning
+        this.solverMode = 'explore'; // 'explore' or 'refine'
+        this.solverUserConfig = null; // Stores user's config for refine mode
 
         // Replay recording
         this.isRecording = false;
@@ -41,6 +58,11 @@ export class Game {
         this.collisionData = []; // Store collision/impact data
         this.replayIndex = 0;
         this.replaySpeed = 1;
+
+        // Bird obstacle
+        this.bird = null;
+        this.birdSpawnTimer = 0;
+        this.birdSpawnInterval = 5000 + Math.random() * 5000; // Random 5-10 seconds
 
         // Physics setup
         this.setupPhysics();
@@ -111,10 +133,14 @@ export class Game {
         this.helpOverlay = document.getElementById('help-overlay');
         this.helpButton = document.getElementById('helpButton');
         this.hintButton = document.getElementById('hintButton');
+        this.refineButton = document.getElementById('refineButton');
         this.closeHelpButton = document.getElementById('close-help');
         this.victoryOverlay = document.getElementById('victory-overlay');
         this.victoryMessage = document.getElementById('victory-message');
         this.replayButton = document.getElementById('replayButton');
+        this.scoreTime = document.getElementById('score-time');
+        this.scoreAttempts = document.getElementById('score-attempts');
+        this.scorePoints = document.getElementById('score-points');
 
         // Button handlers
         this.playButton.addEventListener('click', () => this.startPlay());
@@ -122,6 +148,7 @@ export class Game {
         this.restartButton.addEventListener('click', () => this.restart());
         this.replayButton.addEventListener('click', () => this.startReplay());
         this.hintButton.addEventListener('click', () => this.toggleHints());
+        this.refineButton.addEventListener('click', () => this.startRefineSolver());
         this.helpButton.addEventListener('click', () => this.toggleHelp());
         this.closeHelpButton.addEventListener('click', () => this.hideHelp());
 
@@ -211,6 +238,11 @@ export class Game {
                 // Toggle solver (same as clicking button)
                 this.toggleHints();
                 e.preventDefault();
+            } else if (e.key === 'b' || e.key === 'B') {
+                // Toggle debug mode
+                this.debugMode = !this.debugMode;
+                console.log('Debug mode:', this.debugMode ? 'ON' : 'OFF');
+                e.preventDefault();
             }
         });
     }
@@ -235,6 +267,10 @@ export class Game {
         this.solverBestDistance = Infinity;
         this.solverCurrentAttempt = 0;
         this.solverFoundSolution = false;
+        this.solverTemperature = 1.0;
+        this.solverErrorVectors = [];
+        this.solverMode = 'explore';
+        this.solverUserConfig = null;
         this.showHints = false;
         this.hintButton.textContent = 'Show Hint (?)';
         this.hintButton.disabled = false;
@@ -260,18 +296,63 @@ export class Game {
             this.surfaces.push(surface);
         });
 
-        // Create targets with slight randomization
+        // Create targets with slight randomization, ensuring they don't overlap
         level.targets.forEach(targetData => {
-            // Add random offset: +/- 30 pixels in each direction
-            const randomX = targetData.x + (Math.random() - 0.5) * 60;
-            const randomY = targetData.y + (Math.random() - 0.5) * 60;
+            const targetRadius = 25; // From target.js
+            const minDistance = targetRadius * 2 + 10; // Targets must be at least 60px apart
+            const maxAttempts = 10;
+            let randomX, randomY, validPosition, attempts = 0;
+
+            do {
+                // Add random offset: +/- 30 pixels in each direction
+                randomX = targetData.x + (Math.random() - 0.5) * 60;
+                randomY = targetData.y + (Math.random() - 0.5) * 60;
+
+                // Check if this position overlaps with existing targets
+                validPosition = true;
+                for (const existingTarget of this.targets) {
+                    const dx = randomX - existingTarget.x;
+                    const dy = randomY - existingTarget.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < minDistance) {
+                        validPosition = false;
+                        break;
+                    }
+                }
+
+                attempts++;
+            } while (!validPosition && attempts < maxAttempts);
+
+            // If we couldn't find a valid position, use base position
+            if (!validPosition) {
+                randomX = targetData.x;
+                randomY = targetData.y;
+            }
+
             const target = new Target(randomX, randomY);
             this.targets.push(target);
         });
 
+        // Create bird obstacle
+        this.bird = new Bird(this.canvas.width, this.canvas.height);
+        this.birdSpawnTimer = 0;
+        this.birdSpawnInterval = 5000 + Math.random() * 5000; // Random 5-10 seconds
+
         // Reset state
         this.currentState = this.states.MENU;
         this.attempts = 0;
+
+        // Reset scoring for new level
+        this.levelStartTime = 0;
+        this.levelTime = 0;
+        this.usedSolver = false;
+        this.currentScore = 0;
+
+        // Reset hook animation
+        this.hookReleasing = false;
+        this.hookReleaseProgress = 0;
+        this.hookSwayOffset = 0;
     }
 
     clearLevel() {
@@ -340,6 +421,9 @@ export class Game {
 
     toggleHints() {
         if (!this.solverRunning) {
+            // Reset to explore mode (in case refine was used before)
+            this.solverMode = 'explore';
+            this.solverUserConfig = null;
             // Start the solver
             this.startSolver();
         } else {
@@ -349,7 +433,10 @@ export class Game {
     }
 
     startSolver() {
-        console.log('🚀 Starting solver...');
+        console.log('🚀 Starting solver in', this.solverMode, 'mode...');
+
+        // Mark that solver was used (affects scoring)
+        this.usedSolver = true;
 
         // Clear all previous solver state (important for retries)
         this.solverRunning = true;
@@ -359,12 +446,30 @@ export class Game {
         this.solverCurrentAttempt = 0;
         this.solverFoundSolution = false;
         this.showHints = false; // Clear visualization from previous run
+        this.solverErrorVectors = []; // Clear learning from previous run
 
-        this.hintButton.textContent = 'Solving...';
-        this.hintButton.disabled = true;
+        // Set initial temperature based on mode
+        if (this.solverMode === 'refine') {
+            this.solverTemperature = 0.2; // Start cool for refinement
+        } else {
+            this.solverTemperature = 1.0; // Start hot for exploration
+        }
+
+        if (this.solverMode === 'refine') {
+            this.hintButton.textContent = 'Solving...';
+            this.refineButton.textContent = 'Refining...';
+            this.refineButton.disabled = true;
+            this.hintButton.disabled = true;
+        } else {
+            this.hintButton.textContent = 'Solving...';
+            this.hintButton.disabled = true;
+            this.refineButton.disabled = true;
+        }
 
         console.log('Solver state:', {
             running: this.solverRunning,
+            mode: this.solverMode,
+            temperature: this.solverTemperature,
             attempts: this.solverAttempts.length,
             currentAttempt: this.solverCurrentAttempt
         });
@@ -377,6 +482,29 @@ export class Game {
         this.solverRunning = false;
         this.hintButton.textContent = 'Show Hint (?)';
         this.hintButton.disabled = false;
+        this.refineButton.textContent = 'Refine My Setup';
+        this.refineButton.disabled = false;
+    }
+
+    startRefineSolver() {
+        console.log('🔧 Starting refine solver...');
+
+        // Capture user's current surface configuration
+        this.solverUserConfig = this.surfaces.map(s => ({
+            x: s.body.position.x,
+            y: s.body.position.y,
+            width: s.width,
+            angle: s.body.angle * (180 / Math.PI), // Convert to degrees
+            locked: s.locked
+        }));
+
+        console.log('Captured user config:', this.solverUserConfig);
+
+        // Set mode to refine
+        this.solverMode = 'refine';
+
+        // Start the solver (which will use the user config)
+        this.startSolver();
     }
 
     runSolverStep() {
@@ -386,9 +514,16 @@ export class Game {
         try {
             const level = getLevel(this.currentLevel);
 
+            // Update temperature (cool down linearly in explore mode)
+            const maxAttempts = this.solverMode === 'refine' ? 30 : 50;
+            if (this.solverMode === 'explore') {
+                this.solverTemperature = 1.0 - (this.solverCurrentAttempt / maxAttempts);
+                this.solverTemperature = Math.max(0, this.solverTemperature);
+            }
+
             // Generate a random configuration based on initial setup
             config = this.generateRandomConfig(level);
-            console.log('Solver attempt', this.solverCurrentAttempt + 1, 'config:', config);
+            console.log('Solver attempt', this.solverCurrentAttempt + 1, 'temp:', this.solverTemperature.toFixed(2), 'config:', config);
 
             // Simulate physics with this configuration
             result = this.simulateConfiguration(config, level);
@@ -399,8 +534,37 @@ export class Game {
                 config: config,
                 trajectory: result.trajectory,
                 success: result.success,
-                closestDistance: result.closestDistance
+                closestDistance: result.closestDistance,
+                collisionData: result.collisionData
             });
+
+            // Track error vector for failed attempts (learning)
+            if (!result.success && result.trajectory.length > 0) {
+                const ballFinalPos = result.trajectory[result.trajectory.length - 1];
+
+                // Find nearest target
+                let nearestTarget = this.targets[0];
+                let minDist = Infinity;
+                this.targets.forEach(target => {
+                    const dx = target.x - ballFinalPos.x;
+                    const dy = target.y - ballFinalPos.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearestTarget = target;
+                    }
+                });
+
+                // Calculate error vector (direction from ball to target)
+                const errorVector = {
+                    dx: nearestTarget.x - ballFinalPos.x,
+                    dy: nearestTarget.y - ballFinalPos.y,
+                    magnitude: minDist
+                };
+                this.solverErrorVectors.push(errorVector);
+
+                console.log('Error vector:', errorVector.dx.toFixed(1), errorVector.dy.toFixed(1), 'magnitude:', errorVector.magnitude.toFixed(1));
+            }
 
             this.solverCurrentAttempt++;
         } catch (error) {
@@ -418,8 +582,13 @@ export class Game {
             this.solverFoundSolution = true;
             this.solverRunning = false;
             this.showHints = true;
-            this.hintButton.textContent = `Solution Found! (${this.solverCurrentAttempt} attempts)`;
-            this.hintButton.disabled = false;
+            if (this.solverMode === 'refine') {
+                this.refineButton.textContent = `Solution Found! (${this.solverCurrentAttempt} attempts)`;
+                this.refineButton.disabled = false;
+            } else {
+                this.hintButton.textContent = `Solution Found! (${this.solverCurrentAttempt} attempts)`;
+                this.hintButton.disabled = false;
+            }
             return;
         }
 
@@ -429,12 +598,18 @@ export class Game {
             this.solverBestDistance = result.closestDistance;
         }
 
-        // Limit attempts
-        if (this.solverCurrentAttempt >= 50) {
+        // Limit attempts based on mode
+        const maxAttempts = this.solverMode === 'refine' ? 30 : 50;
+        if (this.solverCurrentAttempt >= maxAttempts) {
             this.solverRunning = false;
             this.showHints = true;
-            this.hintButton.textContent = `Best Try (${this.solverCurrentAttempt} attempts)`;
-            this.hintButton.disabled = false;
+            if (this.solverMode === 'refine') {
+                this.refineButton.textContent = `Best Try (${this.solverCurrentAttempt} attempts)`;
+                this.refineButton.disabled = false;
+            } else {
+                this.hintButton.textContent = `Best Try (${this.solverCurrentAttempt} attempts)`;
+                this.hintButton.disabled = false;
+            }
             return;
         }
 
@@ -447,63 +622,131 @@ export class Game {
         const avgTargetX = this.targets.reduce((sum, t) => sum + t.x, 0) / this.targets.length;
         const avgTargetY = this.targets.reduce((sum, t) => sum + t.y, 0) / this.targets.length;
 
-        // Generate random surface positions based on initial setup
-        const config = level.surfaces.map((surface, index) => {
-            let xVariation, yVariation, angle;
+        // Calculate error bias from recent failures (last 10 attempts)
+        let errorBiasX = 0, errorBiasY = 0;
+        if (this.solverErrorVectors.length > 0) {
+            const recentErrors = this.solverErrorVectors.slice(-10);
+            errorBiasX = recentErrors.reduce((sum, e) => sum + e.dx, 0) / recentErrors.length;
+            errorBiasY = recentErrors.reduce((sum, e) => sum + e.dy, 0) / recentErrors.length;
 
-            if (index === 0) {
-                // First surface must catch falling ball
-                // Keep X near ball start, vary Y less
-                const ballX = level.ballStart.x;
-                const halfWidth = surface.width / 2;
+            // Bias strength decreases with temperature (more learning when hot, less when cold)
+            const biasStrength = 0.3 * (1 - this.solverTemperature);
+            errorBiasX *= biasStrength;
+            errorBiasY *= biasStrength;
+        }
 
-                // Ensure surface can catch ball: ballX should be within surface range
-                const minX = ballX - halfWidth + 40;
-                const maxX = ballX + halfWidth - 40;
-                const targetX = minX + Math.random() * (maxX - minX);
-                xVariation = targetX - surface.x;
-                yVariation = (Math.random() - 0.5) * 40; // ±20 pixels vertically
+        // Temperature-based variation ranges
+        // Hot (temp=1.0): ±200px, ±80° - WILD exploration
+        // Medium (temp=0.5): ±100px, ±40° - moderate
+        // Cold (temp=0.0): ±30px, ±15° - fine-tuning
+        const posVariation = 30 + this.solverTemperature * 170; // 30-200px
+        const angleVariation = 15 + this.solverTemperature * 65; // 15-80°
 
-                // Smart angle: calculate direction toward target
-                const surfaceX = surface.x + xVariation;
-                const directionToTarget = avgTargetX - ballX;
+        // Determine base configuration
+        let baseConfig;
+        if (this.solverMode === 'refine' && this.solverUserConfig) {
+            // Use user's current configuration as base
+            baseConfig = this.solverUserConfig;
+        } else {
+            // Use level's initial configuration
+            baseConfig = level.surfaces;
+        }
 
-                if (directionToTarget > 0) {
-                    // Target is to the right, angle should be positive (slope up-right)
-                    // Range: 10° to 70°
-                    angle = 10 + Math.random() * 60;
-                } else {
-                    // Target is to the left, angle should be negative (slope up-left)
-                    // Range: -70° to -10°
-                    angle = -70 + Math.random() * 60;
-                }
-            } else {
-                // Other surfaces can vary more
-                xVariation = (Math.random() - 0.5) * 100; // ±50 pixels
-                yVariation = (Math.random() - 0.5) * 80; // ±40 pixels
-
-                // Smart angle for subsequent surfaces too
-                const surfaceX = surface.x + xVariation;
-                const directionToTarget = avgTargetX - surfaceX;
-
-                if (Math.abs(directionToTarget) < 50) {
-                    // Target roughly aligned, use moderate angles
-                    angle = surface.angle + (Math.random() - 0.5) * 40; // ±20°
-                } else if (directionToTarget > 0) {
-                    // Target is to the right
-                    angle = (Math.random() - 0.5) * 60 + 30; // Range roughly 0° to 60°
-                } else {
-                    // Target is to the left
-                    angle = (Math.random() - 0.5) * 60 - 30; // Range roughly -60° to 0°
-                }
+        // Generate random surface positions based on base config
+        const config = baseConfig.map((surface, index) => {
+            // Skip locked surfaces - keep them at original position
+            if (surface.locked) {
+                return {
+                    x: surface.x,
+                    y: surface.y,
+                    width: surface.width,
+                    angle: surface.angle,
+                    locked: true
+                };
             }
 
+            let baseX, baseY, baseAngle;
+
+            // In explore mode, use smart initial calculations
+            if (this.solverMode === 'explore') {
+                if (index === 0) {
+                    // First surface: smart placement to catch falling ball
+                    const ballX = level.ballStart.x;
+                    const ballY = level.ballStart.y;
+
+                    // Calculate horizontal and vertical distance to target
+                    const horizontalDistToTarget = Math.abs(avgTargetX - ballX);
+                    const verticalDistToTarget = Math.abs(avgTargetY - ballY);
+
+                    // Smart intercept distance based on target geometry
+                    let interceptDistance;
+                    if (horizontalDistToTarget > 400) {
+                        // Far target: catch early to preserve energy
+                        interceptDistance = 80 + Math.random() * 60;
+                    } else if (horizontalDistToTarget > 200) {
+                        // Medium distance
+                        interceptDistance = 120 + Math.random() * 80;
+                    } else {
+                        // Close target: can fall further
+                        interceptDistance = 150 + Math.random() * 100;
+                    }
+
+                    // If target is above us, catch earlier to redirect upward
+                    if (avgTargetY < ballY) {
+                        interceptDistance *= 0.6;
+                    }
+
+                    // Place surface below ball
+                    baseX = ballX;
+                    baseY = ballY + interceptDistance;
+
+                    // Smart angle toward target
+                    const directionToTarget = avgTargetX - ballX;
+                    if (directionToTarget > 0) {
+                        // Target right: positive angle
+                        baseAngle = 10 + Math.random() * 60; // 10-70°
+                    } else {
+                        // Target left: negative angle
+                        baseAngle = -70 + Math.random() * 60; // -70 to -10°
+                    }
+                } else {
+                    // Subsequent surfaces: place along predicted path
+                    baseX = surface.x;
+                    baseY = surface.y;
+
+                    // Angle toward target
+                    const directionToTarget = avgTargetX - baseX;
+                    if (Math.abs(directionToTarget) < 50) {
+                        baseAngle = surface.angle; // Keep similar
+                    } else if (directionToTarget > 0) {
+                        baseAngle = 30; // Aim right
+                    } else {
+                        baseAngle = -30; // Aim left
+                    }
+                }
+            } else {
+                // Refine mode: use current surface position as base
+                baseX = surface.x;
+                baseY = surface.y;
+                baseAngle = surface.angle;
+            }
+
+            // Apply temperature-based variation
+            const xVar = (Math.random() - 0.5) * posVariation * 2;
+            const yVar = (Math.random() - 0.5) * posVariation * 2;
+            const angleVar = (Math.random() - 0.5) * angleVariation * 2;
+
+            // Apply error bias (learning from failures)
+            const finalX = baseX + xVar + errorBiasX;
+            const finalY = baseY + yVar + errorBiasY;
+            const finalAngle = baseAngle + angleVar;
+
             return {
-                x: surface.x + xVariation,
-                y: surface.y + yVariation,
+                x: finalX,
+                y: finalY,
                 width: surface.width,
-                angle: angle,
-                locked: surface.locked
+                angle: finalAngle,
+                locked: false
             };
         });
 
@@ -541,6 +784,7 @@ export class Game {
         Matter.World.add(tempWorld, ball);
 
         // Create surfaces (including locked ones for accurate simulation)
+        const surfaceBodies = [];
         config.forEach(surfaceConfig => {
             const angleRad = (surfaceConfig.angle * Math.PI) / 180;
             const surface = Matter.Bodies.rectangle(
@@ -556,7 +800,50 @@ export class Game {
                     label: 'surface'
                 }
             );
+            surfaceBodies.push(surface);
             Matter.World.add(tempWorld, surface);
+        });
+
+        // Track collision data
+        const collisionData = [];
+        Matter.Events.on(tempEngine, 'collisionStart', (event) => {
+            event.pairs.forEach(pair => {
+                // Check if ball collided with a surface
+                const isBallCollision = pair.bodyA === ball || pair.bodyB === ball;
+                if (!isBallCollision) return;
+
+                // Find which body is the surface
+                const otherBody = pair.bodyA === ball ? pair.bodyB : pair.bodyA;
+
+                // Only record surface collisions, not walls
+                const surfaceIndex = surfaceBodies.indexOf(otherBody);
+                if (surfaceIndex === -1) return;
+
+                // Get collision point
+                const collision = pair.collision;
+                const contactPoint = collision.supports[0] || { x: ball.position.x, y: ball.position.y };
+
+                // Calculate normal vector (perpendicular to surface)
+                const normal = collision.normal;
+
+                // Get velocity before collision
+                const velocityBefore = { x: ball.velocity.x, y: ball.velocity.y };
+
+                // Calculate impact speed
+                const impactSpeed = Math.sqrt(velocityBefore.x * velocityBefore.x + velocityBefore.y * velocityBefore.y);
+
+                // Store collision data
+                collisionData.push({
+                    x: contactPoint.x,
+                    y: contactPoint.y,
+                    normalX: normal.x,
+                    normalY: normal.y,
+                    velocityBeforeX: velocityBefore.x,
+                    velocityBeforeY: velocityBefore.y,
+                    impactSpeed: impactSpeed,
+                    surfaceAngle: config[surfaceIndex].angle
+                });
+            });
         });
 
         // Simulate for 300 frames (5 seconds at 60fps)
@@ -566,6 +853,18 @@ export class Game {
 
         for (let i = 0; i < 300; i++) {
             Matter.Engine.update(tempEngine, 1000 / 60);
+
+            // Safety cap to match actual game and prevent physics instability
+            const maxVelocity = 100;
+            const velocity = ball.velocity;
+            const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+            if (speed > maxVelocity) {
+                const scale = maxVelocity / speed;
+                Matter.Body.setVelocity(ball, {
+                    x: velocity.x * scale,
+                    y: velocity.y * scale
+                });
+            }
 
             trajectory.push({
                 x: ball.position.x,
@@ -600,7 +899,8 @@ export class Game {
         return {
             trajectory,
             success,
-            closestDistance
+            closestDistance,
+            collisionData
         };
     }
 
@@ -612,11 +912,25 @@ export class Game {
         }
 
         if (this.currentState === this.states.MENU) {
-            this.ball.activate();
-            this.currentState = this.states.PLAYING;
+            // Start hook release animation
+            this.hookReleasing = true;
+            this.hookReleaseProgress = 0;
+
+            // Delay ball activation for hook animation
+            setTimeout(() => {
+                this.ball.activate();
+                this.currentState = this.states.PLAYING;
+                this.hookReleasing = false;
+            }, 300); // 300ms animation
+
             this.attempts++;
             this.playButton.textContent = 'Playing...';
             this.playButton.disabled = true;
+
+            // Start time tracking on first attempt
+            if (this.attempts === 1) {
+                this.levelStartTime = Date.now();
+            }
 
             // Start recording for replay
             this.replayData = [];
@@ -633,6 +947,18 @@ export class Game {
         this.playButton.textContent = 'Play';
         this.playButton.disabled = false;
         this.isRecording = false;
+
+        // Reset hook animation
+        this.hookReleasing = false;
+        this.hookReleaseProgress = 0;
+        this.hookSwayOffset = 0;
+
+        // Reset bird
+        if (this.bird) {
+            this.bird.active = false;
+            this.birdSpawnTimer = 0;
+            this.birdSpawnInterval = 5000 + Math.random() * 5000;
+        }
 
         // Show replay button if we have data
         console.log('Restart: replay data length =', this.replayData.length);
@@ -701,14 +1027,48 @@ export class Game {
         const allCollected = this.targets.every(target => target.collected);
         if (allCollected && this.targets.length > 0) {
             this.currentState = this.states.WON;
+
+            // Calculate final time
+            if (this.levelStartTime > 0) {
+                this.levelTime = (Date.now() - this.levelStartTime) / 1000; // Convert to seconds
+            }
+
+            // Calculate score
+            this.currentScore = this.calculateScore();
+
             setTimeout(() => {
                 this.showVictory();
             }, 500);
         }
     }
 
+    calculateScore() {
+        // No score if solver was used
+        if (this.usedSolver) {
+            return 0;
+        }
+
+        // Base score: 1000 points
+        let score = 1000;
+
+        // Penalty for time: -10 points per second (max penalty 500)
+        const timePenalty = Math.min(this.levelTime * 10, 500);
+        score -= timePenalty;
+
+        // Penalty for attempts: -100 points per extra attempt beyond first
+        const attemptPenalty = (this.attempts - 1) * 100;
+        score -= attemptPenalty;
+
+        // Minimum score is 0
+        return Math.max(0, Math.round(score));
+    }
+
     showVictory() {
-        this.victoryMessage.textContent = `Attempts: ${this.attempts}`;
+        if (this.usedSolver) {
+            this.victoryMessage.textContent = `Time: ${this.levelTime.toFixed(1)}s | Attempts: ${this.attempts} | Score: N/A (Used Hint)`;
+        } else {
+            this.victoryMessage.textContent = `Time: ${this.levelTime.toFixed(1)}s | Attempts: ${this.attempts} | Score: ${this.currentScore}`;
+        }
         this.victoryOverlay.classList.remove('hidden');
         this.isRecording = false;
 
@@ -767,6 +1127,19 @@ export class Game {
             });
         }
 
+        // Update hook animation
+        if (this.hookReleasing) {
+            this.hookReleaseProgress += deltaTime / 300; // 300ms animation
+            if (this.hookReleaseProgress > 1) {
+                this.hookReleaseProgress = 1;
+            }
+        }
+
+        // Update hook sway (idle animation)
+        if (this.currentState === this.states.MENU) {
+            this.hookSwayOffset = Math.sin(Date.now() / 800) * 10; // Gentle sway
+        }
+
         // Update entities
         if (this.ball) {
             this.ball.update(deltaTime);
@@ -783,8 +1156,35 @@ export class Game {
             surface.handleMouseMove(this.mousePos.x, this.mousePos.y);
         });
 
+        // Update bird obstacle
+        if (this.bird && this.currentState === this.states.PLAYING) {
+            // Update bird spawn timer
+            if (!this.bird.active) {
+                this.birdSpawnTimer += deltaTime;
+                if (this.birdSpawnTimer >= this.birdSpawnInterval) {
+                    this.bird.spawn();
+                    this.birdSpawnTimer = 0;
+                    this.birdSpawnInterval = 5000 + Math.random() * 5000; // Next spawn in 5-10 seconds
+                }
+            }
+
+            // Update bird position
+            this.bird.update(deltaTime);
+
+            // Check collision with ball
+            if (this.ball && this.ball.isActive && this.bird.checkCollision(this.ball)) {
+                // Bird hit the ball - restart level
+                this.restart();
+            }
+        }
+
         // Update UI
         this.updateUI();
+
+        // Show replay button in MENU state if we have replay data
+        if (this.currentState === this.states.MENU && this.replayData.length > 0) {
+            this.replayButton.style.display = 'block';
+        }
 
         // Check win condition
         this.checkWinCondition();
@@ -841,6 +1241,48 @@ export class Game {
             this.elasticityFill.style.width = `${ratio * 100}%`;
             this.elasticityFill.style.background = this.ball.color;
         }
+
+        // Update score display
+        this.scoreAttempts.textContent = this.attempts;
+
+        // Update time if playing
+        if (this.currentState === this.states.PLAYING && this.levelStartTime > 0) {
+            const currentTime = (Date.now() - this.levelStartTime) / 1000;
+            this.scoreTime.textContent = `${currentTime.toFixed(1)}s`;
+
+            // Calculate live score preview
+            const liveScore = this.calculateLiveScore(currentTime);
+            this.scorePoints.textContent = liveScore;
+
+            // Change color if solver was used
+            if (this.usedSolver) {
+                this.scorePoints.style.color = '#999';
+                this.scorePoints.textContent = 'N/A';
+            } else {
+                this.scorePoints.style.color = '#333';
+            }
+        } else if (this.currentState === this.states.MENU) {
+            // Reset to initial values when in menu
+            if (this.attempts === 0) {
+                this.scoreTime.textContent = '0s';
+                this.scorePoints.textContent = '1000';
+                this.scorePoints.style.color = '#333';
+            }
+        }
+    }
+
+    calculateLiveScore(currentTime) {
+        if (this.usedSolver) {
+            return 'N/A';
+        }
+
+        let score = 1000;
+        const timePenalty = Math.min(currentTime * 10, 500);
+        score -= timePenalty;
+        const attemptPenalty = (this.attempts - 1) * 100;
+        score -= attemptPenalty;
+
+        return Math.max(0, Math.round(score));
     }
 
     render() {
@@ -859,6 +1301,11 @@ export class Game {
         // Render targets
         this.targets.forEach(target => target.render(this.ctx));
 
+        // Render bird obstacle
+        if (this.bird) {
+            this.bird.render(this.ctx);
+        }
+
         // Show angle toggle indicator
         if (this.showAngles && !isReplay && !this.showHints && !this.solverRunning) {
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -869,7 +1316,8 @@ export class Game {
         }
 
         // Render hint surfaces and solver visualization
-        if (!isReplay && (this.showHints || this.solverRunning)) {
+        // In debug mode, show hints even during replay
+        if ((this.debugMode || !isReplay) && (this.showHints || this.solverRunning)) {
             this.renderHints();
         }
 
@@ -881,7 +1329,96 @@ export class Game {
             if (this.ball) {
                 this.ball.render(this.ctx);
             }
+
+            // Render hook in MENU state or during release animation
+            if (this.currentState === this.states.MENU || this.hookReleasing) {
+                this.renderHook();
+            }
         }
+
+        // Show debug mode indicator
+        if (this.debugMode) {
+            this.ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
+            this.ctx.fillRect(10, this.canvas.height - 180, 150, 40);
+            this.ctx.fillStyle = 'white';
+            this.ctx.font = 'bold 14px sans-serif';
+            this.ctx.fillText('DEBUG MODE (B)', 20, this.canvas.height - 155);
+        }
+    }
+
+    renderHook() {
+        if (!this.ball) return;
+
+        const ctx = this.ctx;
+        const ballPos = this.ball.body.position;
+        const ballRadius = this.ball.radius;
+
+        // Calculate hook position with sway and release animation
+        let hookX = ballPos.x + this.hookSwayOffset;
+        let hookY = ballPos.y - ballRadius - 10;
+
+        // During release, move hook upward
+        if (this.hookReleasing) {
+            hookY -= this.hookReleaseProgress * 80;
+        }
+
+        // Draw cable/rope from top of screen
+        ctx.save();
+        ctx.strokeStyle = 'rgba(80, 80, 80, 0.6)';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+
+        // Draw cable with slight curve
+        ctx.beginPath();
+        ctx.moveTo(hookX, 0);
+        // Bezier curve for natural hanging cable
+        const controlY = hookY * 0.3;
+        ctx.quadraticCurveTo(hookX + this.hookSwayOffset * 0.5, controlY, hookX, hookY);
+        ctx.stroke();
+
+        // Draw hook mechanism
+        const hookSize = 30;
+        const openAmount = this.hookReleasing ? this.hookReleaseProgress * 45 : 0; // Opens 45 degrees
+
+        // Hook body (small rectangle at top)
+        ctx.fillStyle = '#555';
+        ctx.fillRect(hookX - 6, hookY - 15, 12, 15);
+
+        // Draw hook claws (two curved pieces)
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 6;
+
+        // Left claw
+        ctx.beginPath();
+        ctx.arc(
+            hookX - 8,
+            hookY,
+            hookSize / 2,
+            Math.PI / 4 - openAmount * (Math.PI / 180),
+            Math.PI * 0.75,
+            false
+        );
+        ctx.stroke();
+
+        // Right claw
+        ctx.beginPath();
+        ctx.arc(
+            hookX + 8,
+            hookY,
+            hookSize / 2,
+            Math.PI / 4,
+            Math.PI * 0.75 + openAmount * (Math.PI / 180),
+            true
+        );
+        ctx.stroke();
+
+        // Draw attachment point (small circle)
+        ctx.fillStyle = '#666';
+        ctx.beginPath();
+        ctx.arc(hookX, hookY - 15, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
     }
 
     renderHints() {
@@ -987,6 +1524,7 @@ export class Game {
         if (this.solverBestConfig && this.showHints) {
             const config = this.solverBestConfig;
             const successfulAttempt = this.solverAttempts.find(a => a.success);
+            const bestAttempt = successfulAttempt || this.solverAttempts.find(a => a.config === this.solverBestConfig);
 
             // Draw successful trajectory if exists
             if (successfulAttempt) {
@@ -1002,6 +1540,54 @@ export class Game {
                     }
                 });
                 ctx.stroke();
+            }
+
+            // Draw collision/impact points with force vectors
+            if (bestAttempt && bestAttempt.collisionData) {
+                bestAttempt.collisionData.forEach((collision) => {
+                    // Draw impact point
+                    ctx.fillStyle = 'rgba(78, 205, 196, 0.8)';
+                    ctx.beginPath();
+                    ctx.arc(collision.x, collision.y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Draw normal force vector (perpendicular to surface)
+                    const normalScale = 80;
+                    this.drawForceVector(
+                        ctx,
+                        collision.x,
+                        collision.y,
+                        collision.normalX * normalScale,
+                        collision.normalY * normalScale,
+                        '#00FF00',
+                        'Normal Force'
+                    );
+
+                    // Draw incoming velocity vector
+                    const velScale = 3;
+                    this.drawForceVector(
+                        ctx,
+                        collision.x,
+                        collision.y,
+                        -collision.velocityBeforeX * velScale,
+                        -collision.velocityBeforeY * velScale,
+                        '#4ECDC4',
+                        'Impact'
+                    );
+
+                    // Draw surface angle and speed label
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                    ctx.fillRect(collision.x + 15, collision.y - 45, 100, 40);
+                    ctx.fillStyle = '#4ECDC4';
+                    ctx.font = 'bold 12px sans-serif';
+                    ctx.fillText(`Angle: ${collision.surfaceAngle.toFixed(1)}°`, collision.x + 20, collision.y - 30);
+                    ctx.fillStyle = 'white';
+                    ctx.font = '11px sans-serif';
+                    ctx.fillText(`Speed: ${collision.impactSpeed.toFixed(1)}`, collision.x + 20, collision.y - 15);
+                });
             }
 
             // Draw ghost surfaces at solution positions
