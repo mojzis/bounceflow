@@ -138,7 +138,14 @@ export class SolverSystem {
         } catch (error) {
             console.error('Solver error:', error);
             this.stop();
-            alert('Solver encountered an error. Check browser console.');
+
+            // Use StateController recovery if available
+            if (this.game.stateController) {
+                this.game.stateController.recover();
+            } else {
+                // Fallback for backward compatibility
+                alert('Solver encountered an error. Check browser console.');
+            }
             return;
         }
 
