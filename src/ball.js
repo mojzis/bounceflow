@@ -10,12 +10,13 @@ export class Ball {
         this.radius = radius;
         this.physicsWorld = physicsWorld;
 
-        // Create physics body
+        // Create physics body (start as static - frozen until released)
         this.body = Matter.Bodies.circle(x, y, radius, {
             restitution: 0.95,
             friction: 0,
             frictionAir: 0,
             density: 0.001,
+            isStatic: true, // Start frozen
             label: 'ball'
         });
 
@@ -44,9 +45,13 @@ export class Ball {
 
     activate() {
         this.isActive = true;
+        // Make ball dynamic (unfreeze it)
+        Matter.Body.setStatic(this.body, false);
     }
 
     reset(x, y) {
+        // Freeze ball again
+        Matter.Body.setStatic(this.body, true);
         Matter.Body.setPosition(this.body, { x, y });
         Matter.Body.setVelocity(this.body, { x: 0, y: 0 });
         Matter.Body.setAngularVelocity(this.body, 0);
