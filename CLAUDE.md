@@ -23,7 +23,9 @@ npm run preview
 
 ## Git Commit Convention
 
-Use git log as a chronicle of changes. Commit messages should be:
+**Workflow**: When a feature is complete, commit and push automatically. This is a learning project, so potential hiccups are considered part of the learning process.
+
+Commit messages should be:
 - Concise and factual
 - Focus on what changed and why
 - No grandiose language or cheerleading
