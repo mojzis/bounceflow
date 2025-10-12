@@ -22,8 +22,8 @@ export class Ball {
         Matter.World.add(physicsWorld, this.body);
 
         // Property system
-        this.baseElasticity = 0.5;
-        this.currentElasticity = 0.5;
+        this.baseElasticity = 0.9;
+        this.currentElasticity = 0.9;
         this.elasticityPhase = 0;
         this.cycleSpeed = 0.001; // Radians per frame
         this.propertyPattern = 'static'; // 'static', 'wave', 'pulse'
