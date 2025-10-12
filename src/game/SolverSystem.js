@@ -1,5 +1,32 @@
 /**
- * AI solver system that finds solutions to levels
+ * SolverSystem - AI solver that finds solutions to levels using simulated annealing
+ *
+ * Responsibilities:
+ * - Generate random surface configurations using smart heuristics
+ * - Simulate ball physics in temporary physics world
+ * - Track best configurations and successful solutions
+ * - Use temperature-based exploration (simulated annealing)
+ * - Support two modes: explore (from scratch) and refine (from user config)
+ * - Learn from failures using error vectors
+ *
+ * Public API:
+ * - start(mode, userConfig): Start solver in 'explore' or 'refine' mode
+ * - stop(): Stop the solver loop
+ * - runStep(): Execute one solver iteration (called internally)
+ *
+ * Properties:
+ * - running: Boolean indicating if solver is active
+ * - attempts: Array of all simulation attempts with trajectories
+ * - bestConfig: Best surface configuration found
+ * - foundSolution: Boolean indicating if solution was found
+ * - temperature: Current temperature for simulated annealing (1.0 to 0.0)
+ * - mode: 'explore' or 'refine'
+ *
+ * Algorithm:
+ * - Uses simulated annealing with temperature cooling
+ * - First surface gets smart placement below ball toward target
+ * - Learns from errors using recent failure vectors
+ * - Explores widely at high temperature, refines at low temperature
  */
 import * as Matter from 'matter-js';
 import { getLevel } from '../levels.js';

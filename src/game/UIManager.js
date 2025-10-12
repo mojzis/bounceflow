@@ -1,5 +1,35 @@
 /**
- * Manages DOM UI elements and event handlers
+ * UIManager - Manages DOM UI elements and event handlers
+ *
+ * Responsibilities:
+ * - Initialize and cache references to DOM elements
+ * - Set up button click handlers
+ * - Set up keyboard shortcuts
+ * - Update UI elements each frame (score, time, elasticity bar)
+ *
+ * Public API:
+ * - constructor(game): Set up UI elements and event handlers
+ * - updateUI(): Update dynamic UI elements (called each frame)
+ *
+ * Keyboard Shortcuts:
+ * - Space: Play/drop ball
+ * - R: Restart level
+ * - V: Toggle angle display
+ * - ?: Toggle solver hints
+ * - H: Toggle help overlay
+ * - B: Toggle debug mode
+ * - Tab: Select next surface
+ * - WASD/Arrows: Move selected surface (Shift for 5x speed)
+ * - Q/E or Arrows with Shift: Rotate selected surface
+ * - Escape: Close help
+ *
+ * DOM Elements:
+ * - playButton, dropButton, restartButton, replayButton
+ * - hintButton, refineButton, helpButton
+ * - levelDisplay, levelName, hintText
+ * - scoreTime, scoreAttempts, scorePoints
+ * - elasticityFill (progress bar)
+ * - helpOverlay, victoryOverlay
  */
 export class UIManager {
     constructor(game) {

@@ -1,5 +1,39 @@
 /**
- * Main game class for BounceFlow
+ * Game - Main orchestrator class for BounceFlow
+ *
+ * Architecture:
+ * This class acts as the central coordinator, delegating responsibilities to specialized managers:
+ * - PhysicsManager: Matter.js engine, collision detection
+ * - InputManager: Mouse, touch, keyboard input
+ * - SolverSystem: AI level solver with simulated annealing
+ * - RenderingSystem: All rendering including hook, hints, replay
+ * - UIManager: DOM elements, buttons, keyboard shortcuts
+ * - LevelManager: Level loading, progression, entity creation
+ *
+ * Responsibilities:
+ * - Manage game state (MENU, PLAYING, PAUSED, WON, REPLAY)
+ * - Orchestrate main game loop (update → render cycle)
+ * - Coordinate between managers (e.g., input → physics → render)
+ * - Handle game flow (play, restart, victory, replay)
+ * - Track scoring and timing
+ * - Manage game entities (ball, surfaces, targets, bird)
+ *
+ * Public API:
+ * - start(): Begin game loop
+ * - stop(): Stop game loop
+ * - update(deltaTime): Update game state and entities
+ * - render(): Render current frame
+ * - resize(width, height): Handle canvas resize
+ *
+ * Game States:
+ * - MENU: Ball on hook, surfaces adjustable
+ * - PLAYING: Ball active, physics running
+ * - PAUSED: Not currently used
+ * - WON: Level complete, showing victory screen
+ * - REPLAY: Playing back recorded ball trajectory
+ *
+ * Note: This file is now ~750 lines (down from 2220), with most logic
+ * delegated to specialized managers in the game/ directory.
  */
 
 import * as Matter from 'matter-js';

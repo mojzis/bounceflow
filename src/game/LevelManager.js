@@ -1,5 +1,25 @@
 /**
- * Manages level loading, progression, and state
+ * LevelManager - Manages level loading, progression, and state
+ *
+ * Responsibilities:
+ * - Load level data and create game entities (ball, surfaces, targets, bird)
+ * - Clear/cleanup level entities and physics bodies
+ * - Handle level progression (next level, game complete)
+ * - Reset solver and replay state between levels
+ * - Randomize target positions for variety
+ *
+ * Public API:
+ * - loadLevel(levelId): Load and initialize a level
+ * - clearLevel(): Clean up current level entities
+ * - nextLevel(): Progress to next level or show game complete
+ * - showGameComplete(): Display victory screen for beating all levels
+ *
+ * Features:
+ * - Target randomization: spreads targets ±30px from base position
+ * - Validates target spacing to prevent overlap
+ * - Clears victory timers to prevent auto-advance conflicts
+ * - Resets all game state (attempts, time, scoring, solver, replay)
+ * - Creates bird obstacle with random spawn interval (5-10s)
  */
 import * as Matter from 'matter-js';
 import { Ball } from '../ball.js';

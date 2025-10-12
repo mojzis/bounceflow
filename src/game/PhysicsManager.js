@@ -1,5 +1,23 @@
 /**
- * Manages Matter.js physics engine and collision detection
+ * PhysicsManager - Manages Matter.js physics engine and collision detection
+ *
+ * Responsibilities:
+ * - Initialize and configure Matter.js engine and world
+ * - Create and manage boundary walls
+ * - Handle physics simulation updates with fixed timestep
+ * - Manage collision detection callbacks
+ * - Handle canvas resize events
+ *
+ * Public API:
+ * - constructor(canvas): Initialize physics with canvas dimensions
+ * - update(deltaTime): Update physics simulation (fixed 60Hz timestep)
+ * - onCollision(callback): Register collision event callback
+ * - resize(width, height): Recreate walls for new canvas dimensions
+ *
+ * Properties:
+ * - engine: Matter.js Engine instance
+ * - world: Matter.js World instance
+ * - walls: Array of boundary wall bodies
  */
 import * as Matter from 'matter-js';
 

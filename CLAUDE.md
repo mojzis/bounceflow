@@ -42,23 +42,63 @@ Fix solver angle calculation bug
 
 ## Architecture Overview
 
-### Entity-Component System
+### Modular Design (Refactored October 2025)
 
-The game follows an entity pattern where each game object (Ball, Surface, Target) manages both its physics body and rendering:
+The game follows a **manager-based architecture** where the main Game class acts as an orchestrator, delegating specialized responsibilities to focused modules. This reduces complexity and improves testability.
 
-- **Game Loop**: `game.js` contains the main game loop (`update()` → `render()` cycle) and orchestrates all entities
-- **Physics Integration**: Each entity creates and updates its own Matter.js body but delegates collision detection to the game
-- **State Management**: Game states (MENU, PLAYING, PAUSED, WON, REPLAY) control interaction and rendering behavior
+**Architecture Pattern**: Game class (orchestrator) → Manager classes (specialized systems) → Entity classes (game objects)
 
-### Core Modules
+### Game Managers (src/game/)
 
-**`game.js`** (1382 lines) - Main game controller
-- Manages Matter.js physics engine and world
-- Handles all game states and transitions
-- Input handling (mouse, touch, keyboard)
-- Built-in solver system for finding level solutions
-- Replay system that records and plays back ball trajectories with collision visualization
-- UI management and keyboard shortcuts
+**`game/index.js`** (~750 lines) - Main orchestrator
+- Coordinates all managers and game flow
+- Manages game state (MENU, PLAYING, WON, REPLAY)
+- Orchestrates main game loop (update → render cycle)
+- Tracks scoring, timing, and attempts
+- Manages game entities (ball, surfaces, targets, bird)
+
+**`game/PhysicsManager.js`** (~100 lines)
+- Initializes Matter.js engine and world
+- Creates and manages boundary walls
+- Handles physics updates with fixed timestep (60Hz)
+- Manages collision detection callbacks
+- Handles canvas resize events
+
+**`game/InputManager.js`** (~200 lines)
+- Processes mouse events (down, move, up, right-click)
+- Handles touch events for mobile devices
+- Tracks keyboard state with acceleration for held keys
+- Forwards input events to game entities (surfaces)
+
+**`game/SolverSystem.js`** (~400 lines)
+- AI solver using simulated annealing algorithm
+- Generates smart surface configurations
+- Simulates physics in temporary world
+- Two modes: explore (from scratch) and refine (from user config)
+- Learns from failures using error vectors
+- Temperature-based exploration (1.0 → 0.0)
+
+**`game/RenderingSystem.js`** (~660 lines)
+- Renders main game scene with purple gradient background
+- Renders robot crab claw holding ball
+- Visualizes solver attempts and solutions
+- Renders replay mode with force vectors
+- Color-coded physics visualization (red=impact, green=normal, yellow=velocity)
+
+**`game/UIManager.js`** (~145 lines)
+- Initializes DOM elements and event handlers
+- Sets up keyboard shortcuts
+- Updates UI each frame (score, time, elasticity bar)
+- Manages help overlay and button states
+
+**`game/LevelManager.js`** (~170 lines)
+- Loads level data and creates entities
+- Clears/cleans up levels
+- Handles level progression
+- Randomizes target positions (±30px)
+- Resets solver and replay state
+
+### Entity Classes (src/)
 
 **`ball.js`** - Ball entity with dynamic properties
 - Manages physics body (Matter.js circle)
@@ -72,14 +112,22 @@ The game follows an entity pattern where each game object (Ball, Surface, Target
 - Keyboard control support with selection highlighting
 - Locked vs. movable surfaces
 
-**`levels.js`** - Level definitions array
-- Each level specifies: ball start position, surface configurations, target positions, property pattern
-- `getLevel(id)` and `getTotalLevels()` helpers
-
 **`target.js`** - Collectible star targets
 - Collision detection with ball
 - Pulse animation for uncollected targets
 - Particle burst celebration on collection
+
+**`bird.js`** - Flying obstacle
+- Moves across screen periodically
+- Collision with ball triggers level restart
+- Spawns at random intervals (5-10s)
+
+### Supporting Modules (src/)
+
+**`levels.js`** - Level definitions array
+- Each level specifies: ball start position, surface configurations, target positions, property pattern
+- `getLevel(id)` and `getTotalLevels()` helpers
+- 15 levels with increasing complexity
 
 **`utils.js`** - Math and geometry utilities
 - Color interpolation (`lerpColor`)
@@ -88,42 +136,55 @@ The game follows an entity pattern where each game object (Ball, Surface, Target
 
 ### Physics Configuration
 
-Matter.js engine settings (in `game.js:setupPhysics()`):
+Matter.js engine settings (in `PhysicsManager`):
 - Gravity: `world.gravity.y = 0.5` (scaled for gameplay feel)
 - Position/velocity iterations: 10 each for stability
-- Fixed timestep: 16.67ms (60Hz) in `update()` to prevent tunneling
+- Fixed timestep: 16.67ms (60Hz) to prevent tunneling
 - All physics bodies use low friction (0) and high restitution (0.95-0.99) for bouncy gameplay
+- Boundary walls positioned 25px outside canvas edges
 
 ### Key Systems
 
-**Solver System** (`game.js:startSolver()`)
-- Generates random surface configurations attempting to reach targets
-- Runs physics simulations in a temporary engine (300 frames)
-- Visualizes attempts as ghost trajectories overlaid on the game
+**Solver System** (`SolverSystem`)
+- AI solver using simulated annealing algorithm
+- Generates smart surface configurations with heuristics
+- First surface intelligently placed below ball toward target
+- Runs physics simulations in temporary engine (300 frames max)
+- Visualizes attempts as ghost trajectories (last 20 failures shown)
 - Shows solution as cyan dashed surfaces with angle labels
 - Tracks best attempt when no solution found within 50 attempts
+- Two modes:
+  - **Explore**: Starts from scratch, wide exploration
+  - **Refine**: Uses current player setup, focused refinement
+- Temperature cooling: 1.0 → 0.0 for exploration → exploitation
+- Learns from errors using recent failure vectors
 
-**Replay System** (`game.js:startReplay()`)
+**Replay System** (`RenderingSystem`)
 - Records ball position, velocity, and collision data during gameplay
 - Replay mode visualizes:
-  - Full trajectory path
+  - Full trajectory path (white trail)
   - Impact points with red markers
   - Force vectors (green = normal force, red = impact velocity, yellow = ball velocity)
   - Surface angles and impact speeds at collision points
+  - Velocity vectors every 10 frames
 - Always displays surface angles during replay
+- Loops continuously until player exits
 
-**Input System**
+**Input System** (`InputManager` + `UIManager`)
 - Mouse: Left-click drag (move), right-click drag (rotate surfaces)
 - Touch: Single touch drag (move), handles mobile
+- Keyboard acceleration: Held keys speed up from 1x → 5x over 1 second
 - Keyboard shortcuts:
   - `Space` - Release ball
   - `R` - Restart level
   - `V` - Toggle angle display
   - `?` - Toggle solver/hints
   - `H` - Toggle help overlay
+  - `B` - Toggle debug mode
   - `Tab` - Select next surface
   - `Q/E` or `Arrow Left/Right` - Rotate selected surface (Shift for 5° increments)
   - `WASD` or `Arrow keys` - Move selected surface (Shift for 5px increments)
+  - `Escape` - Close help
 
 ## Important Technical Details
 
@@ -147,10 +208,10 @@ The Vite config includes special handling for Matter.js:
 ### Level Design Patterns
 
 Levels use locked/unlocked surfaces to create constraints:
-- `locked: true` - Fixed surface, provides structural constraints
-- `locked: false` - Interactive surface, player must position/angle these
+- `locked: true` - Fixed surface (gray), provides structural constraints
+- `locked: false` - Interactive surface (white), player must position/angle these
 
-Target positions use randomization (`±30px`) to add variety between plays (see `game.js:loadLevel()`).
+Target positions use randomization (`±30px`) to add variety between plays (see `LevelManager.loadLevel()`). The system validates target spacing to prevent overlap.
 
 ## Development Philosophy
 
@@ -162,16 +223,26 @@ From README.md: "This game is built with love for kids to discover the joy of ph
 
 ```
 src/
-├── main.js          # Entry point, canvas setup, event binding
-├── game.js          # Game loop, state management, solver, replay
-├── ball.js          # Ball entity with dynamic elasticity
-├── surface.js       # Interactive surface entity
-├── target.js        # Star collection targets
-├── levels.js        # Level definitions array
-├── utils.js         # Math/geometry utilities
+├── main.js                    # Entry point, canvas setup, event binding
+├── game/
+│   ├── index.js               # Main Game orchestrator (~750 lines)
+│   ├── PhysicsManager.js      # Matter.js physics engine (~100 lines)
+│   ├── InputManager.js        # Mouse, touch, keyboard input (~200 lines)
+│   ├── SolverSystem.js        # AI solver with simulated annealing (~400 lines)
+│   ├── RenderingSystem.js     # All rendering logic (~660 lines)
+│   ├── UIManager.js           # DOM elements and keyboard shortcuts (~145 lines)
+│   └── LevelManager.js        # Level loading and progression (~170 lines)
+├── ball.js                    # Ball entity with dynamic elasticity
+├── surface.js                 # Interactive surface entity
+├── target.js                  # Star collection targets
+├── bird.js                    # Flying obstacle
+├── levels.js                  # Level definitions array (15 levels)
+├── utils.js                   # Math/geometry utilities
 └── styles/
-    └── style.css    # UI styling
+    └── style.css              # UI styling
 ```
+
+**Refactoring History**: Originally game.js was a monolithic 2220-line file. Refactored in October 2025 to extract 6 specialized managers, reducing main orchestrator to ~750 lines and improving maintainability.
 
 ## Testing Approach
 
@@ -192,8 +263,11 @@ npm run test:ui
 
 **Current coverage:**
 - `utils.test.js` - All utility functions (geometry, math, color)
+- `levels.test.js` - Level definition validation
 
 **Test file location:** Place test files next to source files with `.test.js` suffix (e.g., `utils.test.js` next to `utils.js`)
+
+**Note**: The modular architecture (game managers) makes unit testing easier by isolating concerns. Future work could include tests for individual managers.
 
 ### Manual Testing
 

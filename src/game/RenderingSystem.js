@@ -1,5 +1,27 @@
 /**
- * Handles all game rendering
+ * RenderingSystem - Handles all game rendering including specialized visualizations
+ *
+ * Responsibilities:
+ * - Render main game scene (gradient background, entities)
+ * - Render hook/claw animation in MENU state
+ * - Render solver hints with ghost surfaces and trajectories
+ * - Render replay mode with force vectors and collision analysis
+ * - Render UI indicators (angles, debug mode)
+ *
+ * Public API:
+ * - render(): Main render method called each frame
+ * - renderHook(): Draw robot claw holding ball
+ * - renderHints(): Draw solver visualization (attempts, solution)
+ * - renderReplay(): Draw replay with force vectors and analysis
+ * - drawForceVector(ctx, x, y, fx, fy, color, label): Draw force arrow
+ * - drawVelocityVector(ctx, x, y, vx, vy, speed, isLarge): Draw velocity arrow
+ *
+ * Features:
+ * - Purple gradient background (#667eea to #764ba2)
+ * - Robot crab claw with grip pads and joint details
+ * - Solver shows failed attempts, current test, and solution
+ * - Replay shows full trajectory with impact points and force vectors
+ * - Color-coded vectors: red=impact, green=normal force, yellow=velocity
  */
 import { getLevel } from '../levels.js';
 

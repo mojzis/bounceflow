@@ -1,5 +1,27 @@
 /**
- * Manages all user input: mouse, touch, keyboard
+ * InputManager - Manages all user input: mouse, touch, keyboard
+ *
+ * Responsibilities:
+ * - Handle mouse events (down, move, up, right-click)
+ * - Handle touch events for mobile devices
+ * - Track keyboard state with acceleration for held keys
+ * - Forward input events to game entities (surfaces)
+ *
+ * Public API:
+ * - handleMouseDown(e): Process mouse button press
+ * - handleMouseMove(e): Process mouse movement
+ * - handleMouseUp(e): Process mouse button release
+ * - handleTouchStart(e): Process touch start events
+ * - handleTouchMove(e): Process touch movement
+ * - handleTouchEnd(e): Process touch end events
+ * - processHeldKeys(): Update movement/rotation from held keys with acceleration
+ * - trackKeyDown(key, shiftKey): Start tracking a held key
+ * - trackKeyUp(key): Stop tracking a held key
+ *
+ * Properties:
+ * - mousePos: Current mouse position {x, y}
+ * - heldKeys: Set of currently held keys
+ * - keyHoldDuration: Map of key hold start times for acceleration
  */
 export class InputManager {
     constructor(game) {
