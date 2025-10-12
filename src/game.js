@@ -8,6 +8,7 @@ import { Surface } from './surface.js';
 import { Target } from './target.js';
 import { Bird } from './bird.js';
 import { getLevel, getTotalLevels } from './levels.js';
+import { PhysicsManager } from './game/PhysicsManager.js';
 
 export class Game {
     constructor(canvas) {
@@ -99,35 +100,13 @@ export class Game {
     }
 
     setupPhysics() {
-        // Create Matter.js engine
-        this.engine = Matter.Engine.create({
-            enableSleeping: false,
-            positionIterations: 10,
-            velocityIterations: 10
-        });
-        this.world = this.engine.world;
+        this.physics = new PhysicsManager(this.canvas);
+        this.engine = this.physics.engine;
+        this.world = this.physics.world;
+        this.walls = this.physics.walls;
 
-        // Configure gravity (scale for better gameplay)
-        this.world.gravity.y = 0.5;
-
-        // Disable air resistance
-        this.world.gravity.scale = 0.001;
-
-        // Create walls
-        const wallOptions = { isStatic: true, friction: 0, restitution: 0.99 };
-        this.walls = [
-            Matter.Bodies.rectangle(this.canvas.width / 2, -25, this.canvas.width, 50, wallOptions), // Top
-            Matter.Bodies.rectangle(this.canvas.width / 2, this.canvas.height + 25, this.canvas.width, 50, wallOptions), // Bottom
-            Matter.Bodies.rectangle(-25, this.canvas.height / 2, 50, this.canvas.height, wallOptions), // Left
-            Matter.Bodies.rectangle(this.canvas.width + 25, this.canvas.height / 2, 50, this.canvas.height, wallOptions) // Right
-        ];
-
-        Matter.World.add(this.world, this.walls);
-
-        // Set up collision detection for recording impacts
-        Matter.Events.on(this.engine, 'collisionStart', (event) => {
-            this.handleCollisions(event.pairs);
-        });
+        // Register collision handler
+        this.physics.onCollision((pairs) => this.handleCollisions(pairs));
     }
 
     setupUI() {
@@ -1186,8 +1165,7 @@ export class Game {
 
         // Update physics with fixed timestep (16.67ms = 60Hz)
         // This prevents tunneling issues
-        const fixedTimeStep = 1000 / 60;
-        Matter.Engine.update(this.engine, fixedTimeStep);
+        this.physics.update(deltaTime);
 
         // Record ball state if recording
         if (this.isRecording && this.ball && this.ball.isActive) {
@@ -2204,16 +2182,7 @@ export class Game {
     resize(width, height) {
         this.canvas.width = width;
         this.canvas.height = height;
-
-        // Recreate walls with new dimensions
-        Matter.World.remove(this.world, this.walls);
-        const wallOptions = { isStatic: true, friction: 0, restitution: 0.99 };
-        this.walls = [
-            Matter.Bodies.rectangle(width / 2, -25, width, 50, wallOptions),
-            Matter.Bodies.rectangle(width / 2, height + 25, width, 50, wallOptions),
-            Matter.Bodies.rectangle(-25, height / 2, 50, height, wallOptions),
-            Matter.Bodies.rectangle(width + 25, height / 2, 50, height, wallOptions)
-        ];
-        Matter.World.add(this.world, this.walls);
+        this.physics.resize(width, height);
+        this.walls = this.physics.walls;
     }
 }
