@@ -276,6 +276,12 @@ export class Game {
     }
 
     startPlay() {
+        if (this.currentState === this.states.REPLAY) {
+            // Exit replay mode
+            this.stopReplay();
+            return;
+        }
+
         if (this.currentState === this.states.MENU) {
             this.ball.activate();
             this.currentState = this.states.PLAYING;
