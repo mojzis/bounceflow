@@ -409,9 +409,31 @@ export class Game {
         // Generate random surface positions based on initial setup
         const config = level.surfaces.map((surface, index) => {
             // Add some random variation
-            const angleVariation = (Math.random() - 0.5) * 30; // ±15 degrees
-            const xVariation = (Math.random() - 0.5) * 100; // ±50 pixels
-            const yVariation = (Math.random() - 0.5) * 80; // ±40 pixels
+            const angleVariation = (Math.random() - 0.5) * 60; // ±30 degrees
+
+            // For the first surface, keep it near the ball's X position
+            // since ball falls straight down
+            let xVariation, yVariation;
+            if (index === 0) {
+                // First surface must catch falling ball
+                // Keep X near ball start, vary Y less
+                const ballX = level.ballStart.x;
+                const halfWidth = surface.width / 2;
+
+                // Ensure surface can catch ball: ballX should be within surface range
+                // Surface extends from (x - halfWidth) to (x + halfWidth)
+                // So x should be between (ballX - halfWidth + 20) and (ballX + halfWidth - 20)
+                const minX = ballX - halfWidth + 40;
+                const maxX = ballX + halfWidth - 40;
+                const targetX = minX + Math.random() * (maxX - minX);
+                xVariation = targetX - surface.x;
+
+                yVariation = (Math.random() - 0.5) * 40; // ±20 pixels vertically
+            } else {
+                // Other surfaces can vary more
+                xVariation = (Math.random() - 0.5) * 100; // ±50 pixels
+                yVariation = (Math.random() - 0.5) * 80; // ±40 pixels
+            }
 
             return {
                 x: surface.x + xVariation,
