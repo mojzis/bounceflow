@@ -515,123 +515,123 @@ export class Game {
     }
 
     update(deltaTime) {
-        if (this.currentState === this.states.REPLAY) {
-            // Replay mode - just advance through recorded data
-            this.replayIndex += this.replaySpeed;
-            return;
-        }
-
-        // Safety check: verify ball is in valid state before physics update
-        if (this.ball && this.ball.isActive) {
-            const pos = this.ball.body.position;
-            const vel = this.ball.body.velocity;
-            if (!isFinite(pos.x) || !isFinite(pos.y) || !isFinite(vel.x) || !isFinite(vel.y)) {
-                console.error('⚠️ Detected corrupted ball in update loop - forcing restart');
-                this.restart();
+        try {
+            if (this.currentState === this.states.REPLAY) {
+                // Replay mode - just advance through recorded data
+                this.replayIndex += this.replaySpeed;
                 return;
             }
-        }
 
-        // Update physics with fixed timestep (16.67ms = 60Hz)
-        // This prevents tunneling issues
-        this.physics.update(deltaTime);
-
-        // Record ball state if recording
-        if (this.isRecording && this.ball && this.ball.isActive) {
-            const velocity = this.ball.body.velocity;
-            const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-
-            // Double-check validity before recording
-            if (isFinite(velocity.x) && isFinite(velocity.y)) {
-                this.replayData.push({
-                    x: this.ball.body.position.x,
-                    y: this.ball.body.position.y,
-                    vx: velocity.x,
-                    vy: velocity.y,
-                    speed: speed,
-                    timestamp: Date.now()
-                });
-            }
-        }
-
-        // Update hook animation
-        if (this.hookReleasing) {
-            this.hookReleaseProgress += deltaTime / 300; // 300ms animation
-            if (this.hookReleaseProgress > 1) {
-                this.hookReleaseProgress = 1;
-            }
-        }
-
-        // Update hook sway (idle animation)
-        // Introduce swinging mechanic starting from level 4
-        if (this.currentState === this.states.MENU && this.currentLevel >= 4) {
-            this.hookSwayOffset = Math.sin(Date.now() / 800) * 10; // Gentle sway
-
-            // Move ball with the hook sway
-            if (this.ball) {
-                const level = getLevel(this.currentLevel);
-                const swayX = level.ballStart.x + this.hookSwayOffset;
-                Matter.Body.setPosition(this.ball.body, {
-                    x: swayX,
-                    y: level.ballStart.y
-                });
-            }
-        } else if (this.currentState === this.states.MENU) {
-            // Keep ball and hook static for early levels
-            this.hookSwayOffset = 0;
-        }
-
-        // Update entities
-        if (this.ball) {
-            this.ball.update(deltaTime);
-        }
-
-        this.targets.forEach(target => {
-            target.update(deltaTime);
-            if (this.ball) {
-                target.checkCollection(this.ball);
-            }
-        });
-
-        this.surfaces.forEach(surface => {
-            surface.handleMouseMove(this.input.mousePos.x, this.input.mousePos.y);
-        });
-
-        // Update bird obstacle
-        if (this.bird && this.currentState === this.states.PLAYING) {
-            // Update bird spawn timer
-            if (!this.bird.active) {
-                this.birdSpawnTimer += deltaTime;
-                if (this.birdSpawnTimer >= this.birdSpawnInterval) {
-                    this.bird.spawn();
-                    this.birdSpawnTimer = 0;
-                    this.birdSpawnInterval = 5000 + Math.random() * 5000; // Next spawn in 5-10 seconds
+            // Safety check: verify ball is in valid state before physics update
+            if (this.ball && this.ball.isActive) {
+                const pos = this.ball.body.position;
+                const vel = this.ball.body.velocity;
+                if (!isFinite(pos.x) || !isFinite(pos.y) || !isFinite(vel.x) || !isFinite(vel.y)) {
+                    console.error('⚠️ Detected corrupted ball state - recovering');
+                    this.stateController.recover();
+                    return;
                 }
             }
 
-            // Update bird position
-            this.bird.update(deltaTime);
+            // Update physics with fixed timestep (16.67ms = 60Hz)
+            this.physics.update(deltaTime);
 
-            // Check collision with ball
-            if (this.ball && this.ball.isActive && this.bird.checkCollision(this.ball)) {
-                // Bird hit the ball - restart level
-                this.restart();
+            // Record ball state if recording
+            if (this.isRecording && this.ball && this.ball.isActive) {
+                const velocity = this.ball.body.velocity;
+                const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+
+                // Double-check validity before recording
+                if (isFinite(velocity.x) && isFinite(velocity.y)) {
+                    this.replayData.push({
+                        x: this.ball.body.position.x,
+                        y: this.ball.body.position.y,
+                        vx: velocity.x,
+                        vy: velocity.y,
+                        speed: speed,
+                        timestamp: Date.now()
+                    });
+                }
             }
+
+            // Update hook animation
+            if (this.hookReleasing) {
+                this.hookReleaseProgress += deltaTime / 300;
+                if (this.hookReleaseProgress > 1) {
+                    this.hookReleaseProgress = 1;
+                }
+            }
+
+            // Update hook sway (idle animation)
+            if (this.currentState === this.states.MENU && this.currentLevel >= 4) {
+                this.hookSwayOffset = Math.sin(Date.now() / 800) * 10;
+
+                // Move ball with the hook sway
+                if (this.ball) {
+                    const level = getLevel(this.currentLevel);
+                    const swayX = level.ballStart.x + this.hookSwayOffset;
+                    Matter.Body.setPosition(this.ball.body, {
+                        x: swayX,
+                        y: level.ballStart.y
+                    });
+                }
+            } else if (this.currentState === this.states.MENU) {
+                // Keep ball and hook static for early levels
+                this.hookSwayOffset = 0;
+            }
+
+            // Update entities
+            if (this.ball) {
+                this.ball.update(deltaTime);
+            }
+
+            this.targets.forEach(target => {
+                target.update(deltaTime);
+                if (this.ball) {
+                    target.checkCollection(this.ball);
+                }
+            });
+
+            this.surfaces.forEach(surface => {
+                surface.handleMouseMove(this.input.mousePos.x, this.input.mousePos.y);
+            });
+
+            // Update bird obstacle
+            if (this.bird && this.currentState === this.states.PLAYING) {
+                if (!this.bird.active) {
+                    this.birdSpawnTimer += deltaTime;
+                    if (this.birdSpawnTimer >= this.birdSpawnInterval) {
+                        this.bird.spawn();
+                        this.birdSpawnTimer = 0;
+                        this.birdSpawnInterval = 5000 + Math.random() * 5000;
+                    }
+                }
+
+                this.bird.update(deltaTime);
+
+                if (this.ball && this.ball.isActive && this.bird.checkCollision(this.ball)) {
+                    this.restart();
+                }
+            }
+
+            // Process held keys with acceleration
+            this.processHeldKeys();
+
+            // Update UI
+            this.updateUI();
+
+            // Show replay button in MENU state if we have replay data
+            if (this.currentState === this.states.MENU && this.replayData.length > 0) {
+                this.replayButton.style.display = 'block';
+            }
+
+            // Check win condition
+            this.checkWinCondition();
+
+        } catch (error) {
+            console.error('❌ Update loop error:', error);
+            this.stateController.recover();
         }
-
-        // Process held keys with acceleration
-        this.processHeldKeys();
-
-        // Update UI
-        this.updateUI();
-
-        // Show replay button in MENU state if we have replay data
-        if (this.currentState === this.states.MENU && this.replayData.length > 0) {
-            this.replayButton.style.display = 'block';
-        }
-
-        // Check win condition
-        this.checkWinCondition();
     }
 
     handleCollisions(pairs) {
