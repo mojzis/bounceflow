@@ -144,8 +144,8 @@ export class LevelManager {
         this.game.birdSpawnTimer = 0;
         this.game.birdSpawnInterval = 5000 + Math.random() * 5000;
 
-        // Reset state
-        this.game.currentState = this.game.states.MENU;
+        // Reset state using StateController
+        this.game.stateController.transitionTo('MENU');
         this.game.attempts = 0;
         this.game.levelStartTime = 0;
         this.game.levelTime = 0;
