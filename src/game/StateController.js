@@ -77,8 +77,10 @@ export class StateController {
             g.victoryAdvanceTimer = null;
         }
 
-        // Reset UI flags
-        g.showHints = false;
+        // Reset UI flags (but keep showHints if solver has results)
+        if (!g.solver.bestConfig) {
+            g.showHints = false;
+        }
 
         // Reset hook animation
         g.hookReleasing = false;

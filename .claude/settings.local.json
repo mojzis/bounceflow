@@ -4,7 +4,13 @@
       "Bash(node -c:*)",
       "Bash(npm run build:*)",
       "Bash(npm test:*)",
-      "Bash(pgrep:*)"
+      "Bash(pgrep:*)",
+      "Read(//home/jonas/.config/superpowers/skills/**)",
+      "Bash(npm run test:run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npm run dev:*)",
+      "Read(//home/jonas/Pictures/Screenshots/**)"
     ],
     "deny": [],
     "ask": []

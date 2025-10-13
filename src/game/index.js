@@ -264,7 +264,7 @@ export class Game {
                 this.refineButton.disabled = false;
                 this.showHints = true;
             } else {
-                this.refineButton.textContent = `Best Try (${this.solver.currentAttempt} attempts)`;
+                this.refineButton.textContent = `No Solution (${this.solver.currentAttempt} attempts)`;
                 this.refineButton.disabled = false;
                 this.showHints = true;
             }
@@ -278,7 +278,7 @@ export class Game {
                 this.hintButton.disabled = false;
                 this.showHints = true;
             } else {
-                this.hintButton.textContent = `Best Try (${this.solver.currentAttempt} attempts)`;
+                this.hintButton.textContent = `No Solution (${this.solver.currentAttempt} attempts)`;
                 this.hintButton.disabled = false;
                 this.showHints = true;
             }
