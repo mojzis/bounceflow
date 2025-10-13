@@ -77,11 +77,6 @@ export class StateController {
             g.victoryAdvanceTimer = null;
         }
 
-        // Reset UI flags (but keep showHints if solver has results)
-        if (!g.solver.bestConfig) {
-            g.showHints = false;
-        }
-
         // Reset hook animation
         g.hookReleasing = false;
         g.hookReleaseProgress = 0;
@@ -139,6 +134,8 @@ export class StateController {
                 if (g.replayButton) {
                     g.replayButton.style.display = 'none';
                 }
+                // Hide hints during active play
+                g.showHints = false;
                 break;
 
             case 'WON':
