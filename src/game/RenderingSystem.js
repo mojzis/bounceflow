@@ -83,13 +83,63 @@ export class RenderingSystem {
             }
         }
 
-        // Show debug mode indicator
+        // Show debug mode indicator and coordinates
         if (this.game.debugMode) {
             this.ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
             this.ctx.fillRect(10, this.canvas.height - 180, 150, 40);
             this.ctx.fillStyle = 'white';
             this.ctx.font = 'bold 14px sans-serif';
             this.ctx.fillText('DEBUG MODE (B)', 20, this.canvas.height - 155);
+
+            // Show ball coordinates
+            if (this.game.ball) {
+                const ballPos = this.game.ball.body.position;
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                this.ctx.fillRect(10, 10, 200, 70);
+                this.ctx.fillStyle = '#4ECDC4';
+                this.ctx.font = 'bold 13px monospace';
+                this.ctx.fillText('BALL:', 20, 30);
+                this.ctx.fillStyle = 'white';
+                this.ctx.font = '12px monospace';
+                this.ctx.fillText(`x: ${ballPos.x.toFixed(1)}`, 20, 48);
+                this.ctx.fillText(`y: ${ballPos.y.toFixed(1)}`, 20, 65);
+            }
+
+            // Show target coordinates
+            this.game.targets.forEach((target, index) => {
+                const yOffset = 90 + (index * 120);
+                const collected = target.collected ? ' (COLLECTED)' : '';
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                this.ctx.fillRect(10, yOffset, 200, 95);
+                this.ctx.fillStyle = '#FFE66D';
+                this.ctx.font = 'bold 13px monospace';
+                this.ctx.fillText(`TARGET ${index + 1}${collected}`, 20, yOffset + 20);
+                this.ctx.fillStyle = 'white';
+                this.ctx.font = '12px monospace';
+                this.ctx.fillText(`x: ${target.x.toFixed(1)}`, 20, yOffset + 38);
+                this.ctx.fillText(`y: ${target.y.toFixed(1)}`, 20, yOffset + 55);
+
+                // Calculate distance from ball
+                if (this.game.ball) {
+                    const ballPos = this.game.ball.body.position;
+                    const dx = target.x - ballPos.x;
+                    const dy = target.y - ballPos.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    this.ctx.fillStyle = '#999';
+                    this.ctx.font = '11px monospace';
+                    this.ctx.fillText(`dist: ${distance.toFixed(1)}px`, 20, yOffset + 73);
+                }
+
+                // Draw crosshair on target
+                this.ctx.strokeStyle = 'rgba(255, 230, 109, 0.8)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(target.x - 35, target.y);
+                this.ctx.lineTo(target.x + 35, target.y);
+                this.ctx.moveTo(target.x, target.y - 35);
+                this.ctx.lineTo(target.x, target.y + 35);
+                this.ctx.stroke();
+            });
         }
     }
 

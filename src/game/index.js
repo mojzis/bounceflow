@@ -94,6 +94,7 @@ export class Game {
         // Keep backward compatibility properties
         this.solverMode = 'explore'; // 'explore' or 'refine'
         this.solverUserConfig = null; // Stores user's config for refine mode
+        this.lastSolverRunning = false; // Track solver state changes
 
         // Replay recording
         this.isRecording = false;
@@ -266,7 +267,7 @@ export class Game {
             } else {
                 this.refineButton.textContent = `No Solution (${this.solver.currentAttempt} attempts)`;
                 this.refineButton.disabled = false;
-                this.showHints = true;
+                this.showHints = false;
             }
         } else {
             if (this.solver.running) {
@@ -280,7 +281,7 @@ export class Game {
             } else {
                 this.hintButton.textContent = `No Solution (${this.solver.currentAttempt} attempts)`;
                 this.hintButton.disabled = false;
-                this.showHints = true;
+                this.showHints = false;
             }
         }
     }
@@ -354,31 +355,8 @@ export class Game {
     }
 
     restart() {
-        const level = getLevel(this.currentLevel);
-        if (this.ball && level) {
-            this.ball.reset(level.ballStart.x, level.ballStart.y);
-        }
-
-        // StateController handles cleanup
-        this.stateController.transitionTo('MENU');
-
-        // Reset targets
-        this.targets.forEach(target => {
-            target.collected = false;
-            target.particles = [];
-        });
-
-        // Reset bird
-        if (this.bird) {
-            this.bird.active = false;
-            this.birdSpawnTimer = 0;
-            this.birdSpawnInterval = 5000 + Math.random() * 5000;
-        }
-
-        // Show replay button if we have data
-        if (this.replayData.length > 0) {
-            this.replayButton.style.display = 'block';
-        }
+        // Reload the level to get new randomized target positions
+        this.loadLevel(this.currentLevel);
     }
 
     dropBall() {
@@ -619,6 +597,12 @@ export class Game {
 
             // Update UI
             this.updateUI();
+
+            // Monitor solver completion and update UI
+            if (this.lastSolverRunning && !this.solver.running) {
+                this.updateSolverUI();
+            }
+            this.lastSolverRunning = this.solver.running;
 
             // Show replay button in MENU state if we have replay data
             if (this.currentState === this.states.MENU && this.replayData.length > 0) {
