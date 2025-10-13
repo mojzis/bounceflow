@@ -61,6 +61,10 @@ export class StateController {
         // Stop all async operations
         if (g.solver.running) {
             g.solver.stop();
+            // Update solver UI to reflect stopped state
+            if (g.updateSolverUI) {
+                g.updateSolverUI();
+            }
         }
 
         // Clear all timers
@@ -161,7 +165,13 @@ export class StateController {
         const g = this.game;
 
         // Brutal cleanup - stop everything
-        if (g.solver) g.solver.stop();
+        if (g.solver) {
+            g.solver.stop();
+            // Update solver UI
+            if (g.updateSolverUI) {
+                g.updateSolverUI();
+            }
+        }
         g.isRecording = false;
         g.showHints = false;
         g.hookReleasing = false;
