@@ -30,14 +30,27 @@ export class RenderingSystem {
         this.game = game;
         this.ctx = game.ctx;
         this.canvas = game.canvas;
+
+        // Performance: Cache gradient to avoid recreating it every frame (60fps)
+        this.cachedGradient = null;
+        this.cachedCanvasHeight = 0;
+        this.updateGradient();
+    }
+
+    // Create/update the cached gradient (only when canvas size changes)
+    updateGradient() {
+        if (this.cachedCanvasHeight !== this.canvas.height) {
+            this.cachedGradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+            this.cachedGradient.addColorStop(0, '#667eea');
+            this.cachedGradient.addColorStop(1, '#764ba2');
+            this.cachedCanvasHeight = this.canvas.height;
+        }
     }
 
     render() {
-        // Clear canvas with gradient background
-        const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        gradient.addColorStop(0, '#667eea');
-        gradient.addColorStop(1, '#764ba2');
-        this.ctx.fillStyle = gradient;
+        // Clear canvas with cached gradient background
+        this.updateGradient(); // Only recreates if canvas height changed
+        this.ctx.fillStyle = this.cachedGradient;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Render surfaces (show angles in replay mode or if toggled on)

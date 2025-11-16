@@ -287,7 +287,8 @@ export class Game {
     }
 
     startRefineSolver() {
-        console.log('🔧 Starting refine solver...');
+        // Performance: Logging removed
+        // console.log('🔧 Starting refine solver...');
 
         // Capture user's current surface configuration
         this.solverUserConfig = this.surfaces.map(s => ({
@@ -298,7 +299,8 @@ export class Game {
             locked: s.locked
         }));
 
-        console.log('Captured user config:', this.solverUserConfig);
+        // Performance: Logging removed
+        // console.log('Captured user config:', this.solverUserConfig);
 
         // Set mode to refine
         this.solverMode = 'refine';
@@ -381,7 +383,8 @@ export class Game {
 
         // Ensure we're not in a bad state
         if (this.currentState === this.states.PLAYING) {
-            console.log('Stopping active game before replay');
+            // Performance: Logging removed
+            // console.log('Stopping active game before replay');
             this.restart();
         }
 
@@ -396,7 +399,8 @@ export class Game {
     }
 
     stopReplay() {
-        console.log('Stopping replay, returning to MENU');
+        // Performance: Logging removed
+        // console.log('Stopping replay, returning to MENU');
 
         // StateController handles transition
         this.stateController.transitionTo('MENU');
@@ -463,12 +467,14 @@ export class Game {
         this.victoryOverlay.classList.remove('hidden');
         this.isRecording = false;
 
-        console.log('Victory! Replay data length:', this.replayData.length);
+        // Performance: Logging removed
+        // console.log('Victory! Replay data length:', this.replayData.length);
 
         // Show replay button for completed level
         if (this.replayData.length > 0) {
             this.replayButton.style.display = 'block';
-            console.log('Replay button should now be visible');
+            // Performance: Logging removed
+            // console.log('Replay button should now be visible');
         }
 
         // Clear any existing timers to prevent double-advance

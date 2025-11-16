@@ -92,8 +92,8 @@ export class LevelManager {
         this.game.ball = new Ball(level.ballStart.x, level.ballStart.y, 20, this.game.physics.world);
         this.game.ball.setPropertyPattern(level.propertyPattern, level.cycleSpeed);
 
-        // Debug: log ball start position
-        console.log(`Ball starts at (${level.ballStart.x.toFixed(1)}, ${level.ballStart.y.toFixed(1)})`);
+        // Performance: Debug logging removed
+        // console.log(`Ball starts at (${level.ballStart.x.toFixed(1)}, ${level.ballStart.y.toFixed(1)})`);
 
         // Create surfaces
         level.surfaces.forEach(surfaceData => {
@@ -154,8 +154,8 @@ export class LevelManager {
             const target = new Target(randomX, randomY);
             this.game.targets.push(target);
 
-            // Debug: log target coordinates
-            console.log(`Target created at (${randomX.toFixed(1)}, ${randomY.toFixed(1)}) - offset from base: (${(randomX - targetData.x).toFixed(1)}, ${(randomY - targetData.y).toFixed(1)})`);
+            // Performance: Debug logging removed
+            // console.log(`Target created at (${randomX.toFixed(1)}, ${randomY.toFixed(1)}) - offset from base: (${(randomX - targetData.x).toFixed(1)}, ${(randomY - targetData.y).toFixed(1)})`);
         });
 
         // Create bird
