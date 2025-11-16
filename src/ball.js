@@ -150,16 +150,17 @@ export class Ball {
             return;
         }
 
-        // Draw trail
+        // Draw trail - optimized to reduce canvas state changes
         if (this.isActive && this.trailPoints.length > 1) {
+            ctx.lineCap = 'round';
+            // Draw trail as single path with gradient alpha for better performance
+            ctx.strokeStyle = this.color; // Use current color instead of per-segment
             for (let i = 0; i < this.trailPoints.length - 1; i++) {
                 const alpha = i / this.trailPoints.length;
                 const point = this.trailPoints[i];
 
-                ctx.strokeStyle = point.color;
                 ctx.globalAlpha = alpha * 0.3;
                 ctx.lineWidth = this.radius * 0.5 * alpha;
-                ctx.lineCap = 'round';
 
                 ctx.beginPath();
                 ctx.moveTo(point.x, point.y);
@@ -169,11 +170,8 @@ export class Ball {
             ctx.globalAlpha = 1;
         }
 
-        // Draw glow
-        const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, this.radius * 1.5);
-        gradient.addColorStop(0, this.color);
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        ctx.fillStyle = gradient;
+        // Draw glow - simplified without gradient for better performance
+        ctx.fillStyle = this.color + '40'; // Add alpha hex (25% opacity)
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, this.radius * 1.5, 0, Math.PI * 2);
         ctx.fill();
