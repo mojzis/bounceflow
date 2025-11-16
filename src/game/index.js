@@ -224,6 +224,14 @@ export class Game {
         this.helpOverlay.classList.add('hidden');
     }
 
+    startWorld2() {
+        // Hide world transition overlay
+        this.ui.worldTransitionOverlay.classList.add('hidden');
+
+        // Load Level 16
+        this.levelManager.loadLevel(16);
+    }
+
     toggleHints() {
         if (!this.solver.running) {
             // Reset to explore mode (in case refine was used before)

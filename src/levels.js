@@ -271,6 +271,187 @@ export const LEVELS = [
         propertyPattern: 'static',
         cycleSpeed: 0,
         hint: "Master the gauntlet - precision and patience required!"
+    },
+    // WORLD 2: ELASTICITY - Levels 16-25
+    {
+        id: 16,
+        name: "The Wave Begins",
+        ballStart: { x: 150, y: 100 },
+        surfaces: [
+            { x: 400, y: 450, width: 300, angle: 0, locked: false }
+        ],
+        targets: [
+            { x: 650, y: 200 }
+        ],
+        propertyPattern: 'wave',
+        cycleSpeed: 0.0008,
+        hint: "Watch the ball's color! Release when it's cyan (bouncy) to reach the high target."
+    },
+    {
+        id: 17,
+        name: "Low and High",
+        ballStart: { x: 150, y: 100 },
+        surfaces: [
+            { x: 300, y: 420, width: 250, angle: 0, locked: false },
+            { x: 550, y: 350, width: 200, angle: 15, locked: false }
+        ],
+        targets: [
+            { x: 400, y: 380 },
+            { x: 680, y: 150 }
+        ],
+        propertyPattern: 'wave',
+        cycleSpeed: 0.001,
+        hint: "Collect the low star while red (low bounce), then wait for cyan to reach the high star!"
+    },
+    {
+        id: 18,
+        name: "Bounce Rhythm",
+        ballStart: { x: 100, y: 150 },
+        surfaces: [
+            { x: 250, y: 450, width: 180, angle: 20, locked: false },
+            { x: 450, y: 400, width: 180, angle: -15, locked: false },
+            { x: 650, y: 350, width: 160, angle: 25, locked: false }
+        ],
+        targets: [
+            { x: 350, y: 300 },
+            { x: 650, y: 200 }
+        ],
+        propertyPattern: 'wave',
+        cycleSpeed: 0.0012,
+        hint: "Create a rhythm - each bounce happens at a different elasticity!"
+    },
+    {
+        id: 19,
+        name: "The Pulse",
+        ballStart: { x: 200, y: 100 },
+        surfaces: [
+            { x: 400, y: 460, width: 280, angle: 5, locked: false },
+            { x: 600, y: 300, width: 160, angle: -30, locked: false }
+        ],
+        targets: [
+            { x: 700, y: 150 }
+        ],
+        propertyPattern: 'pulse',
+        cycleSpeed: 0.001,
+        hint: "Wait for the pulse! The ball briefly becomes super bouncy."
+    },
+    {
+        id: 20,
+        name: "Locked Rhythm",
+        ballStart: { x: 150, y: 80 },
+        surfaces: [
+            { x: 300, y: 350, width: 200, angle: 0, locked: true },
+            { x: 550, y: 350, width: 200, angle: 0, locked: true },
+            { x: 425, y: 440, width: 150, angle: 45, locked: false },
+            { x: 650, y: 250, width: 120, angle: -20, locked: false }
+        ],
+        targets: [
+            { x: 500, y: 220 },
+            { x: 730, y: 180 }
+        ],
+        propertyPattern: 'wave',
+        cycleSpeed: 0.0011,
+        hint: "Navigate through the gap - high elasticity helps you climb!"
+    },
+    {
+        id: 21,
+        name: "Double Pulse",
+        ballStart: { x: 100, y: 100 },
+        surfaces: [
+            { x: 250, y: 420, width: 200, angle: 30, locked: false },
+            { x: 450, y: 380, width: 180, angle: -25, locked: false },
+            { x: 620, y: 320, width: 160, angle: 35, locked: false }
+        ],
+        targets: [
+            { x: 350, y: 250 },
+            { x: 550, y: 180 },
+            { x: 700, y: 150 }
+        ],
+        propertyPattern: 'pulse',
+        cycleSpeed: 0.0013,
+        hint: "Three stars, multiple pulses - timing is everything!"
+    },
+    {
+        id: 22,
+        name: "Wave Maze",
+        ballStart: { x: 400, y: 100 },
+        surfaces: [
+            { x: 250, y: 280, width: 180, angle: 20, locked: true },
+            { x: 550, y: 280, width: 180, angle: -20, locked: true },
+            { x: 200, y: 440, width: 160, angle: 50, locked: false },
+            { x: 400, y: 450, width: 140, angle: 0, locked: false },
+            { x: 600, y: 440, width: 160, angle: -50, locked: false }
+        ],
+        targets: [
+            { x: 150, y: 220 },
+            { x: 400, y: 200 },
+            { x: 650, y: 220 }
+        ],
+        propertyPattern: 'wave',
+        cycleSpeed: 0.0012,
+        hint: "Plan your path through the maze - elasticity determines which route works!"
+    },
+    {
+        id: 23,
+        name: "Cascade Timing",
+        ballStart: { x: 100, y: 50 },
+        surfaces: [
+            { x: 250, y: 200, width: 140, angle: -40, locked: true },
+            { x: 400, y: 300, width: 140, angle: 40, locked: true },
+            { x: 550, y: 400, width: 140, angle: -40, locked: true },
+            { x: 300, y: 450, width: 120, angle: 35, locked: false },
+            { x: 500, y: 470, width: 120, angle: -30, locked: false }
+        ],
+        targets: [
+            { x: 180, y: 280 },
+            { x: 480, y: 350 },
+            { x: 680, y: 440 }
+        ],
+        propertyPattern: 'wave',
+        cycleSpeed: 0.0014,
+        hint: "The cascade creates a rhythm - flow with it!"
+    },
+    {
+        id: 24,
+        name: "Pulse Precision",
+        ballStart: { x: 150, y: 100 },
+        surfaces: [
+            { x: 280, y: 320, width: 180, angle: 0, locked: true },
+            { x: 520, y: 320, width: 180, angle: 0, locked: true },
+            { x: 250, y: 460, width: 180, angle: 55, locked: false },
+            { x: 450, y: 440, width: 140, angle: -10, locked: false },
+            { x: 650, y: 240, width: 120, angle: 25, locked: false }
+        ],
+        targets: [
+            { x: 400, y: 240 },
+            { x: 700, y: 150 }
+        ],
+        propertyPattern: 'pulse',
+        cycleSpeed: 0.0015,
+        hint: "Thread the needle during the pulse - precision required!"
+    },
+    {
+        id: 25,
+        name: "Elasticity Mastery",
+        ballStart: { x: 50, y: 100 },
+        surfaces: [
+            { x: 180, y: 250, width: 160, angle: 40, locked: true },
+            { x: 350, y: 350, width: 140, angle: -35, locked: true },
+            { x: 520, y: 250, width: 160, angle: 30, locked: true },
+            { x: 250, y: 460, width: 140, angle: 50, locked: false },
+            { x: 420, y: 450, width: 120, angle: -15, locked: false },
+            { x: 600, y: 400, width: 140, angle: 40, locked: false },
+            { x: 400, y: 180, width: 100, angle: 0, locked: false }
+        ],
+        targets: [
+            { x: 120, y: 200 },
+            { x: 350, y: 280 },
+            { x: 580, y: 180 },
+            { x: 720, y: 320 }
+        ],
+        propertyPattern: 'wave',
+        cycleSpeed: 0.0016,
+        hint: "The ultimate elasticity challenge - use everything you've learned!"
     }
 ];
 

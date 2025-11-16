@@ -193,10 +193,24 @@ export class LevelManager {
     nextLevel() {
         if (this.game.currentLevel < getTotalLevels()) {
             this.game.currentLevel++;
-            this.loadLevel(this.game.currentLevel);
+
+            // Show world transition screen after completing Level 15
+            if (this.game.currentLevel === 16) {
+                this.showWorldTransition();
+            } else {
+                this.loadLevel(this.game.currentLevel);
+            }
         } else {
             this.showGameComplete();
         }
+    }
+
+    showWorldTransition() {
+        // Hide victory overlay
+        this.game.ui.victoryOverlay.classList.add('hidden');
+
+        // Show world transition overlay
+        this.game.ui.worldTransitionOverlay.classList.remove('hidden');
     }
 
     showGameComplete() {
