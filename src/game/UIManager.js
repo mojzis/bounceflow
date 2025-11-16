@@ -57,6 +57,8 @@ export class UIManager {
         this.scoreTime = document.getElementById('score-time');
         this.scoreAttempts = document.getElementById('score-attempts');
         this.scorePoints = document.getElementById('score-points');
+        this.worldTransitionOverlay = document.getElementById('world-transition-overlay');
+        this.startWorld2Button = document.getElementById('start-world-2');
 
         this.setupEventHandlers();
     }
@@ -71,6 +73,7 @@ export class UIManager {
         this.refineButton.addEventListener('click', () => this.game.startRefineSolver());
         this.helpButton.addEventListener('click', () => this.game.toggleHelp());
         this.closeHelpButton.addEventListener('click', () => this.game.hideHelp());
+        this.startWorld2Button.addEventListener('click', () => this.game.startWorld2());
 
         // Click outside to close help
         this.helpOverlay.addEventListener('click', (e) => {
