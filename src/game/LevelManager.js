@@ -95,6 +95,20 @@ export class LevelManager {
         // Debug: log ball start position
         console.log(`Ball starts at (${level.ballStart.x.toFixed(1)}, ${level.ballStart.y.toFixed(1)})`);
 
+        // Disable solver hints for dynamic elasticity levels (World 2+)
+        // The solver doesn't account for changing elasticity, so hints would be inaccurate
+        if (level.propertyPattern !== 'static') {
+            this.game.ui.hintButton.disabled = true;
+            this.game.ui.hintButton.title = 'Hints not available for dynamic levels - feel the rhythm!';
+            this.game.ui.refineButton.disabled = true;
+            this.game.ui.refineButton.title = 'Hints not available for dynamic levels - feel the rhythm!';
+        } else {
+            this.game.ui.hintButton.disabled = false;
+            this.game.ui.hintButton.title = 'Show solver hints (? key)';
+            this.game.ui.refineButton.disabled = false;
+            this.game.ui.refineButton.title = 'Refine your current setup';
+        }
+
         // Create surfaces
         level.surfaces.forEach(surfaceData => {
             const surface = new Surface(

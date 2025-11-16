@@ -233,6 +233,11 @@ export class Game {
     }
 
     toggleHints() {
+        // Don't start solver for dynamic elasticity levels (World 2+)
+        if (this.ui.hintButton.disabled) {
+            return;
+        }
+
         if (!this.solver.running) {
             // Reset to explore mode (in case refine was used before)
             this.solverMode = 'explore';
@@ -295,6 +300,11 @@ export class Game {
     }
 
     startRefineSolver() {
+        // Don't start solver for dynamic elasticity levels (World 2+)
+        if (this.ui.refineButton.disabled) {
+            return;
+        }
+
         console.log('🔧 Starting refine solver...');
 
         // Capture user's current surface configuration
