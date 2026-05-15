@@ -88,8 +88,8 @@ export class StateController {
                 break;
 
             case 'WON':
-                if (g.victoryOverlay && g.victoryOverlay.classList) {
-                    g.victoryOverlay.classList.add('hidden');
+                if (g.ui.victoryOverlay && g.ui.victoryOverlay.classList) {
+                    g.ui.victoryOverlay.classList.add('hidden');
                 }
                 break;
 
@@ -107,14 +107,14 @@ export class StateController {
 
         switch (this.state) {
             case 'MENU':
-                if (g.playButton) {
-                    g.playButton.textContent = 'Play';
-                    g.playButton.disabled = false;
+                if (g.ui.playButton) {
+                    g.ui.playButton.textContent = 'Play';
+                    g.ui.playButton.disabled = false;
                 }
 
                 // Show replay button if we have data
-                if (g.replayButton && g.replayData && g.replayData.length > 0) {
-                    g.replayButton.style.display = 'block';
+                if (g.ui.replayButton && g.replayData && g.replayData.length > 0) {
+                    g.ui.replayButton.style.display = 'block';
                 }
 
                 // Reset ball to start position
@@ -124,15 +124,15 @@ export class StateController {
                 break;
 
             case 'PLAYING':
-                if (g.playButton) {
-                    g.playButton.textContent = 'Playing...';
-                    g.playButton.disabled = true;
+                if (g.ui.playButton) {
+                    g.ui.playButton.textContent = 'Playing...';
+                    g.ui.playButton.disabled = true;
                 }
                 g.isRecording = true;
                 g.replayData = [];
                 g.collisionData = [];
-                if (g.replayButton) {
-                    g.replayButton.style.display = 'none';
+                if (g.ui.replayButton) {
+                    g.ui.replayButton.style.display = 'none';
                 }
                 // Hide hints during active play
                 g.showHints = false;
@@ -143,12 +143,12 @@ export class StateController {
                 break;
 
             case 'REPLAY':
-                if (g.playButton) {
-                    g.playButton.textContent = 'Exit Replay';
-                    g.playButton.disabled = false;
+                if (g.ui.playButton) {
+                    g.ui.playButton.textContent = 'Exit Replay';
+                    g.ui.playButton.disabled = false;
                 }
-                if (g.replayButton) {
-                    g.replayButton.style.display = 'none';
+                if (g.ui.replayButton) {
+                    g.ui.replayButton.style.display = 'none';
                 }
                 g.replayIndex = 0;
                 break;
@@ -186,8 +186,8 @@ export class StateController {
         }
 
         // Hide all overlays
-        if (g.victoryOverlay && g.victoryOverlay.classList) {
-            g.victoryOverlay.classList.add('hidden');
+        if (g.ui.victoryOverlay && g.ui.victoryOverlay.classList) {
+            g.ui.victoryOverlay.classList.add('hidden');
         }
 
         // Force to MENU

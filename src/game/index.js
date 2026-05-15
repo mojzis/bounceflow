@@ -119,25 +119,6 @@ export class Game {
 
         // UI elements
         this.ui = new UIManager(this);
-        // Keep references for backward compatibility
-        this.playButton = this.ui.playButton;
-        this.dropButton = this.ui.dropButton;
-        this.restartButton = this.ui.restartButton;
-        this.levelDisplay = this.ui.levelDisplay;
-        this.levelName = this.ui.levelName;
-        this.hintText = this.ui.hintText;
-        this.elasticityFill = this.ui.elasticityFill;
-        this.helpOverlay = this.ui.helpOverlay;
-        this.helpButton = this.ui.helpButton;
-        this.hintButton = this.ui.hintButton;
-        this.refineButton = this.ui.refineButton;
-        this.closeHelpButton = this.ui.closeHelpButton;
-        this.victoryOverlay = this.ui.victoryOverlay;
-        this.victoryMessage = this.ui.victoryMessage;
-        this.replayButton = this.ui.replayButton;
-        this.scoreTime = this.ui.scoreTime;
-        this.scoreAttempts = this.ui.scoreAttempts;
-        this.scorePoints = this.ui.scorePoints;
 
         // Level management
         this.levelManager = new LevelManager(this);
@@ -207,11 +188,11 @@ export class Game {
     }
 
     toggleHelp() {
-        this.helpOverlay.classList.toggle('hidden');
+        this.ui.helpOverlay.classList.toggle('hidden');
     }
 
     hideHelp() {
-        this.helpOverlay.classList.add('hidden');
+        this.ui.helpOverlay.classList.add('hidden');
     }
 
     startWorld2() {
@@ -259,31 +240,31 @@ export class Game {
     updateSolverUI() {
         if (this.solverMode === 'refine') {
             if (this.solver.running) {
-                this.hintButton.textContent = 'Solving...';
-                this.refineButton.textContent = 'Refining...';
-                this.refineButton.disabled = true;
-                this.hintButton.disabled = true;
+                this.ui.hintButton.textContent = 'Solving...';
+                this.ui.refineButton.textContent = 'Refining...';
+                this.ui.refineButton.disabled = true;
+                this.ui.hintButton.disabled = true;
             } else if (this.solver.foundSolution) {
-                this.refineButton.textContent = `Solution Found! (${this.solver.currentAttempt} attempts)`;
-                this.refineButton.disabled = false;
+                this.ui.refineButton.textContent = `Solution Found! (${this.solver.currentAttempt} attempts)`;
+                this.ui.refineButton.disabled = false;
                 this.showHints = true;
             } else {
-                this.refineButton.textContent = `No Solution (${this.solver.currentAttempt} attempts)`;
-                this.refineButton.disabled = false;
+                this.ui.refineButton.textContent = `No Solution (${this.solver.currentAttempt} attempts)`;
+                this.ui.refineButton.disabled = false;
                 this.showHints = false;
             }
         } else {
             if (this.solver.running) {
-                this.hintButton.textContent = 'Solving...';
-                this.hintButton.disabled = true;
-                this.refineButton.disabled = true;
+                this.ui.hintButton.textContent = 'Solving...';
+                this.ui.hintButton.disabled = true;
+                this.ui.refineButton.disabled = true;
             } else if (this.solver.foundSolution) {
-                this.hintButton.textContent = `Solution Found! (${this.solver.currentAttempt} attempts)`;
-                this.hintButton.disabled = false;
+                this.ui.hintButton.textContent = `Solution Found! (${this.solver.currentAttempt} attempts)`;
+                this.ui.hintButton.disabled = false;
                 this.showHints = true;
             } else {
-                this.hintButton.textContent = `No Solution (${this.solver.currentAttempt} attempts)`;
-                this.hintButton.disabled = false;
+                this.ui.hintButton.textContent = `No Solution (${this.solver.currentAttempt} attempts)`;
+                this.ui.hintButton.disabled = false;
                 this.showHints = false;
             }
         }
@@ -458,16 +439,16 @@ export class Game {
 
     showVictory() {
         if (this.usedSolver) {
-            this.victoryMessage.textContent = `Time: ${this.levelTime.toFixed(1)}s | Attempts: ${this.attempts} | Score: N/A (Used Hint)`;
+            this.ui.victoryMessage.textContent = `Time: ${this.levelTime.toFixed(1)}s | Attempts: ${this.attempts} | Score: N/A (Used Hint)`;
         } else {
-            this.victoryMessage.textContent = `Time: ${this.levelTime.toFixed(1)}s | Attempts: ${this.attempts} | Score: ${this.currentScore}`;
+            this.ui.victoryMessage.textContent = `Time: ${this.levelTime.toFixed(1)}s | Attempts: ${this.attempts} | Score: ${this.currentScore}`;
         }
-        this.victoryOverlay.classList.remove('hidden');
+        this.ui.victoryOverlay.classList.remove('hidden');
         this.isRecording = false;
 
         // Show replay button for completed level
         if (this.replayData.length > 0) {
-            this.replayButton.style.display = 'block';
+            this.ui.replayButton.style.display = 'block';
         }
 
         // Clear any existing timers to prevent double-advance
@@ -477,12 +458,12 @@ export class Game {
         // Auto-advance to next level after 3 seconds
         // Replay button stays visible even after overlay closes
         this.victoryHideTimer = setTimeout(() => {
-            this.victoryOverlay.classList.add('hidden');
+            this.ui.victoryOverlay.classList.add('hidden');
         }, 2000);
 
         // Hide replay button and advance after 5 seconds total
         this.victoryAdvanceTimer = setTimeout(() => {
-            this.replayButton.style.display = 'none';
+            this.ui.replayButton.style.display = 'none';
             this.nextLevel();
         }, 5000);
     }
@@ -605,7 +586,7 @@ export class Game {
 
             // Show replay button in MENU state if we have replay data
             if (this.currentState === 'MENU' && this.replayData.length > 0) {
-                this.replayButton.style.display = 'block';
+                this.ui.replayButton.style.display = 'block';
             }
 
             // Check win condition

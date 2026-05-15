@@ -14,9 +14,11 @@ describe('StateController', () => {
             hookReleasing: false,
             hookReleaseProgress: 0,
             isRecording: false,
-            playButton: { textContent: '', disabled: false },
-            replayButton: { style: { display: 'none' } },
-            victoryOverlay: { classList: { add: vi.fn(), remove: vi.fn() } },
+            ui: {
+                playButton: { textContent: '', disabled: false },
+                replayButton: { style: { display: 'none' } },
+                victoryOverlay: { classList: { add: vi.fn(), remove: vi.fn() } }
+            },
             replayData: [],
             replayIndex: 0,
             ball: null,
