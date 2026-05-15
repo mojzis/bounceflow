@@ -33,7 +33,6 @@ export class StateController {
             return this.recover();
         }
 
-        // Performance: State transition logging removed from hot path
         // console.log(`🔄 State: ${this.state} → ${newState}`);
 
         try {

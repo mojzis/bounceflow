@@ -305,9 +305,6 @@ export class Game {
             return;
         }
 
-        // Performance: Logging removed
-        // console.log('🔧 Starting refine solver...');
-
         // Capture user's current surface configuration
         this.solverUserConfig = this.surfaces.map(s => ({
             x: s.body.position.x,
@@ -316,9 +313,6 @@ export class Game {
             angle: s.body.angle * (180 / Math.PI), // Convert to degrees
             locked: s.locked
         }));
-
-        // Performance: Logging removed
-        // console.log('Captured user config:', this.solverUserConfig);
 
         // Set mode to refine
         this.solverMode = 'refine';
@@ -330,6 +324,7 @@ export class Game {
 
     startPlay() {
         if (this.currentState === this.states.REPLAY) {
+
             // Exit replay mode
             this.stopReplay();
             return;
@@ -401,8 +396,6 @@ export class Game {
 
         // Ensure we're not in a bad state
         if (this.currentState === this.states.PLAYING) {
-            // Performance: Logging removed
-            // console.log('Stopping active game before replay');
             this.restart();
         }
 
@@ -417,9 +410,6 @@ export class Game {
     }
 
     stopReplay() {
-        // Performance: Logging removed
-        // console.log('Stopping replay, returning to MENU');
-
         // StateController handles transition
         this.stateController.transitionTo('MENU');
 
@@ -485,14 +475,9 @@ export class Game {
         this.victoryOverlay.classList.remove('hidden');
         this.isRecording = false;
 
-        // Performance: Logging removed
-        // console.log('Victory! Replay data length:', this.replayData.length);
-
         // Show replay button for completed level
         if (this.replayData.length > 0) {
             this.replayButton.style.display = 'block';
-            // Performance: Logging removed
-            // console.log('Replay button should now be visible');
         }
 
         // Clear any existing timers to prevent double-advance

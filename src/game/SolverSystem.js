@@ -66,9 +66,6 @@ export class SolverSystem {
         // Set initial temperature
         this.temperature = mode === 'refine' ? 0.2 : 1.0;
 
-        // Performance: Detailed state logging removed, only show mode
-        // console.log('Solver state:', { running: this.running, mode: this.mode, temperature: this.temperature });
-
         // Start solver loop
         this.runStep();
     }
@@ -93,13 +90,9 @@ export class SolverSystem {
 
             // Generate configuration
             config = this.generateRandomConfig(level);
-            // Performance: console.log removed from hot path (runs 30-50+ times)
-            // console.log('Solver attempt', this.currentAttempt + 1, 'temp:', this.temperature.toFixed(2));
 
             // Simulate
             result = this.simulateConfiguration(config, level);
-            // Performance: console.log removed from hot path
-            // console.log('Result:', result.success ? 'SUCCESS!' : 'failed', 'distance:', result.closestDistance.toFixed(1));
 
             // Store attempt
             this.attempts.push({

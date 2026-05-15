@@ -92,9 +92,6 @@ export class LevelManager {
         this.game.ball = new Ball(level.ballStart.x, level.ballStart.y, 20, this.game.physics.world);
         this.game.ball.setPropertyPattern(level.propertyPattern, level.cycleSpeed);
 
-        // Performance: Debug logging removed
-        // console.log(`Ball starts at (${level.ballStart.x.toFixed(1)}, ${level.ballStart.y.toFixed(1)})`);
-
         // Disable solver hints for dynamic elasticity levels (World 2+)
         // The solver doesn't account for changing elasticity, so hints would be inaccurate
         if (level.propertyPattern !== 'static') {
@@ -167,9 +164,6 @@ export class LevelManager {
 
             const target = new Target(randomX, randomY);
             this.game.targets.push(target);
-
-            // Performance: Debug logging removed
-            // console.log(`Target created at (${randomX.toFixed(1)}, ${randomY.toFixed(1)}) - offset from base: (${(randomX - targetData.x).toFixed(1)}, ${(randomY - targetData.y).toFixed(1)})`);
         });
 
         // Create bird
