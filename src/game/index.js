@@ -81,10 +81,8 @@ export class Game {
 
         // Solver system
         this.solver = new SolverSystem(this);
-        // Keep backward compatibility properties
-        this.solverMode = 'explore'; // 'explore' or 'refine'
-        this.solverUserConfig = null; // Stores user's config for refine mode
-        this.lastSolverRunning = false; // Track solver state changes
+        // Transition-detection flag for solver UI updates from the main loop
+        this.lastSolverRunning = false;
 
         // Replay recording
         this.isRecording = false;
@@ -211,8 +209,8 @@ export class Game {
 
         if (!this.solver.running) {
             // Reset to explore mode (in case refine was used before)
-            this.solverMode = 'explore';
-            this.solverUserConfig = null;
+            this.solver.mode = 'explore';
+            this.solver.userConfig = null;
             // Start the solver
             this.startSolver();
         } else {
@@ -226,7 +224,7 @@ export class Game {
         this.usedSolver = true;
 
         // Start solver with current mode and config
-        this.solver.start(this.solverMode, this.solverUserConfig);
+        this.solver.start(this.solver.mode, this.solver.userConfig);
 
         // Update UI
         this.updateSolverUI();
@@ -238,7 +236,7 @@ export class Game {
     }
 
     updateSolverUI() {
-        if (this.solverMode === 'refine') {
+        if (this.solver.mode === 'refine') {
             if (this.solver.running) {
                 this.ui.hintButton.textContent = 'Solving...';
                 this.ui.refineButton.textContent = 'Refining...';
@@ -277,7 +275,7 @@ export class Game {
         }
 
         // Capture user's current surface configuration
-        this.solverUserConfig = this.surfaces.map(s => ({
+        this.solver.userConfig = this.surfaces.map(s => ({
             x: s.body.position.x,
             y: s.body.position.y,
             width: s.width,
@@ -286,7 +284,7 @@ export class Game {
         }));
 
         // Set mode to refine
-        this.solverMode = 'refine';
+        this.solver.mode = 'refine';
 
         // Start the solver (which will use the user config)
         this.startSolver();

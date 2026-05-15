@@ -65,18 +65,8 @@ export class Ball {
     update(deltaTime) {
         if (!this.isActive) return;
 
-        // Validate physics body state - detect corruption
-        const pos = this.body.position;
-        const vel = this.body.velocity;
-        if (!isFinite(pos.x) || !isFinite(pos.y) || !isFinite(vel.x) || !isFinite(vel.y)) {
-            console.error('❌ Ball physics corrupted! Position:', pos, 'Velocity:', vel);
-            console.error('Ball will be deactivated. Use restart (R) to continue.');
-            // Deactivate ball and freeze it to stop the corruption loop
-            this.isActive = false;
-            Matter.Body.setStatic(this.body, true);
-            Matter.Body.setVelocity(this.body, { x: 0, y: 0 });
-            return;
-        }
+        // Ball corruption is detected one level up in Game.update(), which
+        // routes through stateController.recover() — see src/game/index.js.
 
         // Update property based on pattern
         if (this.propertyPattern === 'wave') {
