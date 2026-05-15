@@ -33,8 +33,6 @@ export class StateController {
             return this.recover();
         }
 
-        // console.log(`🔄 State: ${this.state} → ${newState}`);
-
         try {
             // Always cleanup old state first
             this.cleanup();
