@@ -13,23 +13,22 @@ This repository is a prototype to see how / whether kids enjoy it.
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
-- npm or yarn
+- Bun (1.0 or higher)
 
 ### Installation
 
 ```bash
 # Install dependencies
-npm install
+bun install
 
 # Start development server
-npm run dev
+bun run dev
 
 # Build for production
-npm run build
+bun run build
 
 # Preview production build
-npm run preview
+bun run preview
 ```
 
 ### Controls
@@ -48,7 +47,7 @@ npm run preview
 ## Current Prototype Features
 
 - ✅ Interactive surfaces (drag and rotate)
-- ✅ 15 test levels with increasing difficulty
+- ✅ 25 levels across 2 worlds
 - ✅ Visual feedback for property changes (color, trails)
 - ✅ Target collection system
 - ✅ Touch controls for mobile
