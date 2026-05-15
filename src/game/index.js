@@ -11,7 +11,7 @@
  * - LevelManager: Level loading, progression, entity creation
  *
  * Responsibilities:
- * - Manage game state (MENU, PLAYING, PAUSED, WON, REPLAY)
+ * - Manage game state (MENU, PLAYING, WON, REPLAY)
  * - Orchestrate main game loop (update → render cycle)
  * - Coordinate between managers (e.g., input → physics → render)
  * - Handle game flow (play, restart, victory, replay)
@@ -28,7 +28,6 @@
  * Game States:
  * - MENU: Ball on hook, surfaces adjustable
  * - PLAYING: Ball active, physics running
- * - PAUSED: Not currently used
  * - WON: Level complete, showing victory screen
  * - REPLAY: Playing back recorded ball trajectory
  *
@@ -57,15 +56,6 @@ export class Game {
 
         // State management
         this.stateController = new StateController(this);
-
-        // DEPRECATED: Keep for backward compatibility
-        this.states = {
-            MENU: 'MENU',
-            PLAYING: 'PLAYING',
-            PAUSED: 'PAUSED',
-            WON: 'WON',
-            REPLAY: 'REPLAY'
-        };
 
         // Getter that reads from StateController
         Object.defineProperty(this, 'currentState', {
@@ -323,14 +313,14 @@ export class Game {
 
 
     startPlay() {
-        if (this.currentState === this.states.REPLAY) {
+        if (this.currentState === 'REPLAY') {
 
             // Exit replay mode
             this.stopReplay();
             return;
         }
 
-        if (this.currentState === this.states.MENU) {
+        if (this.currentState === 'MENU') {
             // Start hook release animation
             this.hookReleasing = true;
             this.hookReleaseProgress = 0;
@@ -376,7 +366,7 @@ export class Game {
 
     dropBall() {
         // Only works if ball is active
-        if (this.currentState !== this.states.PLAYING) return;
+        if (this.currentState !== 'PLAYING') return;
 
         const level = getLevel(this.currentLevel);
         this.ball.reset(level.ballStart.x, level.ballStart.y);
@@ -395,7 +385,7 @@ export class Game {
         }
 
         // Ensure we're not in a bad state
-        if (this.currentState === this.states.PLAYING) {
+        if (this.currentState === 'PLAYING') {
             this.restart();
         }
 
@@ -424,7 +414,7 @@ export class Game {
     }
 
     checkWinCondition() {
-        if (this.currentState !== this.states.PLAYING) return;
+        if (this.currentState !== 'PLAYING') return;
 
         const allCollected = this.targets.every(target => target.collected);
         if (allCollected && this.targets.length > 0) {
@@ -503,7 +493,7 @@ export class Game {
 
     update(deltaTime) {
         try {
-            if (this.currentState === this.states.REPLAY) {
+            if (this.currentState === 'REPLAY') {
                 // Replay mode - just advance through recorded data
                 this.replayIndex += this.replaySpeed;
                 return;
@@ -550,7 +540,7 @@ export class Game {
             }
 
             // Update hook sway (idle animation)
-            if (this.currentState === this.states.MENU && this.currentLevel >= 4) {
+            if (this.currentState === 'MENU' && this.currentLevel >= 4) {
                 this.hookSwayOffset = Math.sin(Date.now() / 800) * 10;
 
                 // Move ball with the hook sway
@@ -562,7 +552,7 @@ export class Game {
                         y: level.ballStart.y
                     });
                 }
-            } else if (this.currentState === this.states.MENU) {
+            } else if (this.currentState === 'MENU') {
                 // Keep ball and hook static for early levels
                 this.hookSwayOffset = 0;
             }
@@ -584,7 +574,7 @@ export class Game {
             });
 
             // Update bird obstacle
-            if (this.bird && this.currentState === this.states.PLAYING) {
+            if (this.bird && this.currentState === 'PLAYING') {
                 if (!this.bird.active) {
                     this.birdSpawnTimer += deltaTime;
                     if (this.birdSpawnTimer >= this.birdSpawnInterval) {
@@ -614,7 +604,7 @@ export class Game {
             this.lastSolverRunning = this.solver.running;
 
             // Show replay button in MENU state if we have replay data
-            if (this.currentState === this.states.MENU && this.replayData.length > 0) {
+            if (this.currentState === 'MENU' && this.replayData.length > 0) {
                 this.replayButton.style.display = 'block';
             }
 

@@ -116,9 +116,9 @@ export class UIManager {
             if (e.key === 'r' || e.key === 'R') {
                 this.game.restart();
             } else if (e.key === ' ') {
-                if (this.game.currentState === this.game.states.MENU) {
+                if (this.game.currentState === 'MENU') {
                     this.game.startPlay();
-                } else if (this.game.currentState === this.game.states.PLAYING) {
+                } else if (this.game.currentState === 'PLAYING') {
                     this.game.dropBall();
                 }
                 e.preventDefault();
@@ -154,7 +154,7 @@ export class UIManager {
 
         this.scoreAttempts.textContent = this.game.attempts;
 
-        if (this.game.currentState === this.game.states.PLAYING && this.game.levelStartTime > 0) {
+        if (this.game.currentState === 'PLAYING' && this.game.levelStartTime > 0) {
             const currentTime = (Date.now() - this.game.levelStartTime) / 1000;
             this.scoreTime.textContent = `${currentTime.toFixed(1)}s`;
 
@@ -167,7 +167,7 @@ export class UIManager {
             } else {
                 this.scorePoints.style.color = '#333';
             }
-        } else if (this.game.currentState === this.game.states.MENU) {
+        } else if (this.game.currentState === 'MENU') {
             if (this.game.attempts === 0) {
                 this.scoreTime.textContent = '0s';
                 this.scorePoints.textContent = '1000';

@@ -54,7 +54,7 @@ export class RenderingSystem {
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Render surfaces (show angles in replay mode or if toggled on)
-        const isReplay = this.game.currentState === this.game.states.REPLAY;
+        const isReplay = this.game.currentState === 'REPLAY';
         const displayAngles = isReplay || this.game.showAngles;
         this.game.surfaces.forEach(surface => surface.render(this.ctx, displayAngles));
 
@@ -82,7 +82,7 @@ export class RenderingSystem {
         }
 
         // Render replay mode
-        if (this.game.currentState === this.game.states.REPLAY) {
+        if (this.game.currentState === 'REPLAY') {
             this.renderReplay();
         } else {
             // Render ball normally
@@ -91,7 +91,7 @@ export class RenderingSystem {
             }
 
             // Render hook in MENU state or during release animation
-            if (this.game.currentState === this.game.states.MENU || this.game.hookReleasing) {
+            if (this.game.currentState === 'MENU' || this.game.hookReleasing) {
                 this.renderHook();
             }
         }
