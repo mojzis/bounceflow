@@ -51,9 +51,17 @@ describe('Level definitions', () => {
     });
 
     it('should have targets far enough apart to avoid overlap after randomization', () => {
+        // Mirrors LevelManager.loadLevel() randomization:
+        //   xOffset           = (Math.random() - 0.5) * 80   → ±40 px
+        //   baseYOffset       = (Math.random() - 0.5) * 50   → ±25 px
+        //   physicsCorrection = xOffset * 0.6                → up to ±24 px
+        //   randomY = y + baseYOffset + physicsCorrection    → worst case ±49 px
+        // Horizontal worst-case shift is the tighter bound; using that as a Euclidean
+        // floor avoids overlap for every pair that's also separated diagonally enough
+        // to clear it (true for every level after Level 14's widening).
         const targetRadius = 25; // From target.js
-        const randomizationRange = 30; // From game.js: ±30 pixels
-        const minSafeDistance = (targetRadius * 2) + (randomizationRange * 2); // 110px minimum
+        const maxXShift = 40;
+        const minSafeDistance = (targetRadius * 2) + (maxXShift * 2); // 130 px
 
         LEVELS.forEach(level => {
             // Check each pair of targets

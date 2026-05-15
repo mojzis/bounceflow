@@ -243,7 +243,7 @@ export const LEVELS = [
         ],
         targets: [
             { x: 700, y: 150 },
-            { x: 700, y: 350 },
+            { x: 550, y: 350 },
             { x: 700, y: 450 }
         ],
         propertyPattern: 'static',
