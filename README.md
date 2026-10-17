@@ -47,7 +47,8 @@ bun run preview
 ## Current Prototype Features
 
 - ✅ Interactive surfaces (drag and rotate)
-- ✅ 25 levels across 2 worlds
+- ✅ 33 levels across 3 worlds
+- ✅ World 3: trampolines, sponges, glass, color gates, fans and power stars that change the ball's bounce and weight
 - ✅ Visual feedback for property changes (color, trails)
 - ✅ Target collection system
 - ✅ Touch controls for mobile
@@ -64,7 +65,7 @@ bun run preview
 
 ## Next Steps
 
-- [ ] Add mass and friction property changes
+- [ ] Add friction property changes
 - [ ] Create more levels (World 1-6)
 - [ ] Add sound effects and music
 - [ ] Implement particle effects

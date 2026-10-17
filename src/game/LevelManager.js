@@ -23,11 +23,10 @@
  * - Creates bird obstacle with random spawn interval (5-10s)
  */
 import * as Matter from 'matter-js';
-import { Ball } from '../ball.js';
-import { Surface } from '../surface.js';
-import { Target } from '../target.js';
 import { Bird } from '../bird.js';
-import { getLevel, getTotalLevels } from '../levels.js';
+import { getLevel, getTotalLevels, getWorldStartingAt } from '../levels.js';
+import { levelHasSpecialMechanics, LEGACY_RESTITUTION } from '../mechanics.js';
+import { buildLevelEntities } from './levelEntities.js';
 
 export class LevelManager {
     constructor(game) {
@@ -88,17 +87,39 @@ export class LevelManager {
         this.game.ui.levelName.textContent = level.name;
         this.game.ui.hintText.textContent = level.hint;
 
-        // Create ball
-        this.game.ball = new Ball(level.ballStart.x, level.ballStart.y, 20, this.game.physics.world);
-        this.game.ball.setPropertyPattern(level.propertyPattern, level.cycleSpeed);
+        // Pick star positions (randomized unless marked fixed)
+        const targetPositions = this.randomizeTargets(level.targets);
 
-        // Disable solver hints for dynamic elasticity levels (World 2+)
-        // The solver doesn't account for changing elasticity, so hints would be inaccurate
-        if (level.propertyPattern !== 'static') {
+        // Create ball, surfaces, targets, gates, fans
+        const world = this.game.physics.world;
+        const entities = buildLevelEntities(level, world, targetPositions);
+        this.game.ball = entities.ball;
+        this.game.surfaces = entities.surfaces;
+        this.game.targets = entities.targets;
+        this.game.gates = entities.gates;
+        this.game.fans = entities.fans;
+
+        // World 3: the ball's own elasticity decides every bounce
+        this.game.physics.setWallRestitution(level.trueElasticity ? 0 : LEGACY_RESTITUTION);
+        this.game.mechanics.setLevel({
+            ball: entities.ball,
+            surfaces: entities.surfaces,
+            gates: entities.gates,
+            fans: entities.fans,
+            trueElasticity: !!level.trueElasticity
+        });
+        this.game.popups.clear();
+
+        // The solver only simulates plain surfaces with a constant ball,
+        // so hints would be wrong on dynamic or World 3 levels
+        if (level.propertyPattern !== 'static' || levelHasSpecialMechanics(level)) {
+            const reason = level.propertyPattern !== 'static'
+                ? 'Hints not available for dynamic levels - feel the rhythm!'
+                : 'Hints not available for material levels - experiment!';
             this.game.ui.hintButton.disabled = true;
-            this.game.ui.hintButton.title = 'Hints not available for dynamic levels - feel the rhythm!';
+            this.game.ui.hintButton.title = reason;
             this.game.ui.refineButton.disabled = true;
-            this.game.ui.refineButton.title = 'Hints not available for dynamic levels - feel the rhythm!';
+            this.game.ui.refineButton.title = reason;
         } else {
             this.game.ui.hintButton.disabled = false;
             this.game.ui.hintButton.title = 'Show solver hints (? key)';
@@ -106,21 +127,32 @@ export class LevelManager {
             this.game.ui.refineButton.title = 'Refine your current setup';
         }
 
-        // Create surfaces
-        level.surfaces.forEach(surfaceData => {
-            const surface = new Surface(
-                surfaceData.x,
-                surfaceData.y,
-                surfaceData.width,
-                surfaceData.angle,
-                surfaceData.locked,
-                this.game.physics.world
-            );
-            this.game.surfaces.push(surface);
-        });
+        // Create bird
+        this.game.bird = new Bird(this.game.canvas.width, this.game.canvas.height);
+        this.game.birdSpawnTimer = 0;
+        this.game.birdSpawnInterval = 5000 + Math.random() * 5000;
 
-        // Create targets with randomization
-        level.targets.forEach(targetData => {
+        // Reset state using StateController
+        this.game.stateController.transitionTo('MENU');
+        this.game.attempts = 0;
+        this.game.levelStartTime = 0;
+        this.game.levelTime = 0;
+        this.game.usedSolver = false;
+        this.game.currentScore = 0;
+        this.game.hookReleasing = false;
+        this.game.hookReleaseProgress = 0;
+        this.game.hookSwayOffset = 0;
+    }
+
+    randomizeTargets(targetDefs) {
+        const positions = [];
+        targetDefs.forEach(targetData => {
+            // Stars inside boxes or behind gates stay where the level puts them
+            if (targetData.fixed) {
+                positions.push({ x: targetData.x, y: targetData.y });
+                return;
+            }
+
             const targetRadius = 25;
             const minDistance = targetRadius * 2 + 10;
             const maxAttempts = 10;
@@ -143,9 +175,9 @@ export class LevelManager {
                 randomY = targetData.y + baseYOffset + physicsCorrection;
 
                 validPosition = true;
-                for (const existingTarget of this.game.targets) {
-                    const dx = randomX - existingTarget.x;
-                    const dy = randomY - existingTarget.y;
+                for (const existing of positions) {
+                    const dx = randomX - existing.x;
+                    const dy = randomY - existing.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
 
                     if (distance < minDistance) {
@@ -162,25 +194,9 @@ export class LevelManager {
                 randomY = targetData.y;
             }
 
-            const target = new Target(randomX, randomY);
-            this.game.targets.push(target);
+            positions.push({ x: randomX, y: randomY });
         });
-
-        // Create bird
-        this.game.bird = new Bird(this.game.canvas.width, this.game.canvas.height);
-        this.game.birdSpawnTimer = 0;
-        this.game.birdSpawnInterval = 5000 + Math.random() * 5000;
-
-        // Reset state using StateController
-        this.game.stateController.transitionTo('MENU');
-        this.game.attempts = 0;
-        this.game.levelStartTime = 0;
-        this.game.levelTime = 0;
-        this.game.usedSolver = false;
-        this.game.currentScore = 0;
-        this.game.hookReleasing = false;
-        this.game.hookReleaseProgress = 0;
-        this.game.hookSwayOffset = 0;
+        return positions;
     }
 
     clearLevel() {
@@ -195,6 +211,10 @@ export class LevelManager {
         this.game.surfaces = [];
         this.game.selectedSurfaceIndex = -1;
 
+        (this.game.gates || []).forEach(gate => gate.remove());
+        this.game.gates = [];
+        this.game.fans = [];
+
         this.game.targets = [];
     }
 
@@ -202,9 +222,10 @@ export class LevelManager {
         if (this.game.currentLevel < getTotalLevels()) {
             this.game.currentLevel++;
 
-            // Show world transition screen after completing Level 15
-            if (this.game.currentLevel === 16) {
-                this.showWorldTransition();
+            // Show world transition screen when a new world begins
+            const world = getWorldStartingAt(this.game.currentLevel);
+            if (world) {
+                this.showWorldTransition(world);
             } else {
                 this.loadLevel(this.game.currentLevel);
             }
@@ -213,12 +234,12 @@ export class LevelManager {
         }
     }
 
-    showWorldTransition() {
+    showWorldTransition(world) {
         // Hide victory overlay
         this.game.ui.victoryOverlay.classList.add('hidden');
 
-        // Show world transition overlay
-        this.game.ui.worldTransitionOverlay.classList.remove('hidden');
+        // Fill in and show world transition overlay
+        this.game.ui.showWorldTransition(world);
     }
 
     showGameComplete() {

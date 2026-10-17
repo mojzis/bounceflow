@@ -100,13 +100,16 @@ describe('Level definitions', () => {
         });
     });
 
-    it('should not have overlapping surfaces', () => {
+    it('should not have overlapping movable surfaces', () => {
         LEVELS.forEach(level => {
             // Check each pair of surfaces for overlap
             for (let i = 0; i < level.surfaces.length; i++) {
                 for (let j = i + 1; j < level.surfaces.length; j++) {
                     const s1 = level.surfaces[i];
                     const s2 = level.surfaces[j];
+
+                    // Locked walls may meet at corners to build boxes
+                    if (s1.locked && s2.locked) continue;
 
                     const overlaps = checkSurfaceOverlap(s1, s2);
 

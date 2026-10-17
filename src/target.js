@@ -2,8 +2,11 @@
  * Target (star) entity for BounceFlow
  */
 
+import { STAR_EFFECTS } from './mechanics.js';
+
 export class Target {
-    constructor(x, y, radius = 25) {
+    constructor(x, y, radius = 25, effect = null) {
+        this.effect = STAR_EFFECTS[effect] ? effect : null;
         this.x = x;
         this.y = y;
         this.radius = radius;
@@ -81,6 +84,19 @@ export class Target {
             ctx.fillStyle = gradient;
             ctx.fillRect(-size * 1.5, -size * 1.5, size * 3, size * 3);
 
+            // Power stars get a colored ring showing their effect
+            if (this.effect) {
+                const fx = STAR_EFFECTS[this.effect];
+                ctx.strokeStyle = fx.color;
+                ctx.lineWidth = 4;
+                ctx.setLineDash([6, 4]);
+                ctx.lineDashOffset = -this.pulseAnimation * 10;
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 1.15, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
             // Draw star
             this.drawStar(ctx, 0, 0, 5, size, size * 0.5);
             ctx.fillStyle = '#FFE66D';
@@ -88,6 +104,10 @@ export class Target {
             ctx.strokeStyle = '#FFD700';
             ctx.lineWidth = 2;
             ctx.stroke();
+
+            if (this.effect) {
+                this.drawEffectIcon(ctx, size);
+            }
 
             ctx.restore();
         } else {
@@ -100,6 +120,37 @@ export class Target {
                 ctx.fill();
                 ctx.globalAlpha = 1;
             });
+        }
+    }
+
+    drawEffectIcon(ctx, size) {
+        const r = size * 0.32;
+        const fx = STAR_EFFECTS[this.effect];
+        ctx.fillStyle = fx.color;
+        ctx.strokeStyle = '#2D2D2D';
+        ctx.lineWidth = 1.5;
+        if (this.effect === 'heavy') {
+            // Little weight block
+            ctx.beginPath();
+            ctx.moveTo(-r, r * 0.8);
+            ctx.lineTo(r, r * 0.8);
+            ctx.lineTo(r * 0.7, -r * 0.5);
+            ctx.lineTo(-r * 0.7, -r * 0.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        } else if (this.effect === 'light') {
+            // Feather
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 0.45, r * 1.1, Math.PI / 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        } else {
+            // Ball in the effect's color
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
         }
     }
 

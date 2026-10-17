@@ -16,6 +16,10 @@
                 <div class="property-bar">
                     <div id="elasticity-fill" class="property-fill"></div>
                 </div>
+                <div class="weight-row">
+                    <span class="property-label">Weight</span>
+                    <span id="weight-value" class="weight-value" data-weight="normal">Normal</span>
+                </div>
             </div>
             <div id="controls">
                 <button id="playButton" class="btn-primary">Play</button>
@@ -58,28 +62,19 @@
             </div>
         </div>
 
-        <!-- World Transition Overlay -->
+        <!-- World Transition Overlay (filled from WORLDS in levels.js) -->
         <div id="world-transition-overlay" class="world-transition-overlay hidden">
             <div class="world-transition-content">
-                <h1>WORLD 2: ELASTICITY</h1>
-                <p class="world-subtitle">"When Bouncy Becomes a Variable"</p>
+                <h1 id="world-title">WORLD 2</h1>
+                <p id="world-subtitle" class="world-subtitle"></p>
                 <div class="world-description">
-                    <p>The ball's bounce changes with time. Watch the colors, feel the rhythm, master the timing!</p>
+                    <p id="world-description"></p>
                 </div>
                 <div class="world-mechanics">
                     <h2>New Mechanics</h2>
-                    <div class="mechanics-grid">
-                        <div class="mechanic-item">
-                            <strong>Wave Pattern</strong>
-                            <p>Smooth oscillation between low and high elasticity</p>
-                        </div>
-                        <div class="mechanic-item">
-                            <strong>Pulse Pattern</strong>
-                            <p>Sudden spikes of super bounciness</p>
-                        </div>
-                    </div>
+                    <div id="world-mechanics-grid" class="mechanics-grid"></div>
                 </div>
-                <button id="start-world-2" class="btn-start-world">START WORLD 2</button>
+                <button id="start-world" class="btn-start-world">START WORLD</button>
             </div>
         </div>
 
@@ -137,6 +132,19 @@
                         <li><span style="color: #4ECDC4;">●</span> <strong>Cyan/Green</strong> = High bounce (ball bounces really high)</li>
                     </ul>
                     <p>In later levels, the ball's properties change over time - watch the color!</p>
+                </div>
+
+                <div class="help-section">
+                    <h2>🧪 Materials &amp; Weight (World 3)</h2>
+                    <ul>
+                        <li><strong style="color: #4ECDC4;">Trampoline</strong> - super springy, and every hit makes the ball bouncier</li>
+                        <li><strong style="color: #FF8C69;">Sponge</strong> - soaks up the bounce and makes the ball softer</li>
+                        <li><strong style="color: #BEE9FF;">Glass</strong> - only a heavy ball can smash through</li>
+                        <li><strong>Color gates</strong> - cyan gates let only bouncy balls through, red gates only soft ones</li>
+                        <li><strong>Power stars</strong> - stars with a ring change the ball: bouncier, softer, heavier or lighter</li>
+                        <li><strong>Fans</strong> - blow light balls far, but barely move heavy ones</li>
+                    </ul>
+                    <p>Heavy and light balls fall at the same speed - just like in real life!</p>
                 </div>
 
                 <div class="help-section">

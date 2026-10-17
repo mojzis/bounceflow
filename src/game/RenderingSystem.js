@@ -53,10 +53,14 @@ export class RenderingSystem {
         this.ctx.fillStyle = this.cachedGradient;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // Fans sit behind everything
+        this.game.fans.forEach(fan => fan.render(this.ctx));
+
         // Render surfaces (show angles in replay mode or if toggled on)
         const isReplay = this.game.currentState === 'REPLAY';
         const displayAngles = isReplay || this.game.showAngles;
         this.game.surfaces.forEach(surface => surface.render(this.ctx, displayAngles));
+        this.game.gates.forEach(gate => gate.render(this.ctx));
 
         // Render targets
         this.game.targets.forEach(target => target.render(this.ctx));
@@ -95,6 +99,9 @@ export class RenderingSystem {
                 this.renderHook();
             }
         }
+
+        // Feedback text ("Boing!", "SMASH!")
+        this.game.popups.render(this.ctx);
 
         // Show debug mode indicator and coordinates
         if (this.game.debugMode) {

@@ -58,7 +58,12 @@ export class UIManager {
         this.scoreAttempts = document.getElementById('score-attempts');
         this.scorePoints = document.getElementById('score-points');
         this.worldTransitionOverlay = document.getElementById('world-transition-overlay');
-        this.startWorld2Button = document.getElementById('start-world-2');
+        this.startWorldButton = document.getElementById('start-world');
+        this.worldTitle = document.getElementById('world-title');
+        this.worldSubtitle = document.getElementById('world-subtitle');
+        this.worldDescription = document.getElementById('world-description');
+        this.worldMechanics = document.getElementById('world-mechanics-grid');
+        this.weightValue = document.getElementById('weight-value');
 
         this.setupEventHandlers();
     }
@@ -73,7 +78,7 @@ export class UIManager {
         this.refineButton.addEventListener('click', () => this.game.startRefineSolver());
         this.helpButton.addEventListener('click', () => this.game.toggleHelp());
         this.closeHelpButton.addEventListener('click', () => this.game.hideHelp());
-        this.startWorld2Button.addEventListener('click', () => this.game.startWorld2());
+        this.startWorldButton.addEventListener('click', () => this.game.startWorld());
 
         // Click outside to close help
         this.helpOverlay.addEventListener('click', (e) => {
@@ -145,11 +150,36 @@ export class UIManager {
         });
     }
 
+    showWorldTransition(world) {
+        this.worldTitle.textContent = `WORLD ${world.id}: ${world.title}`;
+        this.worldSubtitle.textContent = `"${world.subtitle}"`;
+        this.worldDescription.textContent = world.description;
+        this.worldMechanics.replaceChildren(...world.mechanics.map(m => {
+            const item = document.createElement('div');
+            item.className = 'mechanic-item';
+            const name = document.createElement('strong');
+            name.textContent = m.name;
+            const text = document.createElement('p');
+            text.textContent = m.text;
+            item.append(name, text);
+            return item;
+        }));
+        this.startWorldButton.textContent = `START WORLD ${world.id}`;
+        this.worldTransitionOverlay.classList.remove('hidden');
+    }
+
     updateUI() {
         if (this.game.ball) {
             const ratio = this.game.ball.getElasticityRatio();
             this.elasticityFill.style.width = `${ratio * 100}%`;
             this.elasticityFill.style.background = this.game.ball.color;
+
+            const weight = this.game.ball.weight;
+            const label = weight === 'heavy' ? 'Heavy' : weight === 'light' ? 'Light' : 'Normal';
+            if (this.weightValue.textContent !== label) {
+                this.weightValue.textContent = label;
+                this.weightValue.dataset.weight = weight;
+            }
         }
 
         this.scoreAttempts.textContent = this.game.attempts;

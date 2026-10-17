@@ -48,9 +48,12 @@ import { RenderingSystem } from './RenderingSystem.js';
 import { UIManager } from './UIManager.js';
 import { LevelManager } from './LevelManager.js';
 import { StateController } from './StateController.js';
+import { MechanicsSystem } from './MechanicsSystem.js';
+import { Popups } from '../popups.js';
+import { STAR_EFFECTS, GATES } from '../mechanics.js';
 
 export class Game {
-    constructor(canvas) {
+    constructor(canvas, startLevel = 1) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
 
@@ -62,7 +65,7 @@ export class Game {
             get: () => this.stateController.state,
             configurable: true
         });
-        this.currentLevel = 1;
+        this.currentLevel = startLevel;
         this.attempts = 0;
         this.showAngles = false; // Toggle for showing surface angles
         this.showHints = false; // Toggle for showing solution hints
@@ -103,10 +106,16 @@ export class Game {
         // Physics setup
         this.setupPhysics();
 
+        // World 3 mechanics (materials, gates, fans, power stars)
+        this.popups = new Popups();
+        this.mechanics = new MechanicsSystem(this.engine, (type, data) => this.handleMechanicsEvent(type, data));
+
         // Game entities
         this.ball = null;
         this.surfaces = [];
         this.targets = [];
+        this.gates = [];
+        this.fans = [];
         this.selectedSurfaceIndex = -1; // For keyboard control
 
         // Input handling
@@ -193,12 +202,44 @@ export class Game {
         this.ui.helpOverlay.classList.add('hidden');
     }
 
-    startWorld2() {
-        // Hide world transition overlay
+    startWorld() {
+        // Hide world transition overlay and load the world's first level
         this.ui.worldTransitionOverlay.classList.add('hidden');
+        this.levelManager.loadLevel(this.currentLevel);
+    }
 
-        // Load Level 16
-        this.levelManager.loadLevel(16);
+    /**
+     * Steady hook: early levels and World 3 don't swing the ball.
+     */
+    hookSways() {
+        const level = getLevel(this.currentLevel);
+        return this.currentLevel >= 4 && !level.steadyHook;
+    }
+
+    handleMechanicsEvent(type, data) {
+        const { x, y } = data;
+        switch (type) {
+            case 'trampoline':
+                this.popups.add(x, y - 30, 'Boing!', '#4ECDC4');
+                break;
+            case 'sponge':
+                this.popups.add(x, y - 30, 'Squish!', '#FF8C69');
+                break;
+            case 'smash':
+                this.popups.add(x, y - 30, 'SMASH!', '#FFFFFF', 30);
+                break;
+            case 'glassClink':
+                this.popups.add(x, y - 30, 'Clink! Too light to break', '#BEE9FF', 18);
+                break;
+            case 'gateBlocked':
+                this.popups.add(x, y - 30, GATES[data.gate.type].text, GATES[data.gate.type].color, 18);
+                break;
+            case 'star': {
+                const fx = STAR_EFFECTS[data.effect];
+                this.popups.add(x, y - 40, fx.text, fx.color === '#F5F5FF' ? '#FFFFFF' : fx.color, 26);
+                break;
+            }
+        }
     }
 
     toggleHints() {
@@ -305,7 +346,7 @@ export class Game {
             this.hookReleaseProgress = 0;
 
             // Calculate hook swing velocity to transfer to ball
-            const hasSwinging = this.currentLevel >= 4;
+            const hasSwinging = this.hookSways();
             const swayVelocity = hasSwinging ? Math.cos(Date.now() / 800) * 12.5 : 0;
 
             // Delay ball activation for hook animation
@@ -351,6 +392,14 @@ export class Game {
         this.ball.reset(level.ballStart.x, level.ballStart.y);
         this.ball.activate();
         this.attempts++;
+
+        // The fresh ball lost its power star effects, so bring those stars back
+        this.targets.forEach(target => {
+            if (target.effect) {
+                target.collected = false;
+                target.particles = [];
+            }
+        });
 
         // Continue recording - clear previous data
         this.replayData = [];
@@ -490,7 +539,11 @@ export class Game {
             }
 
             // Update physics with fixed timestep (16.67ms = 60Hz)
+            // Mechanics push the ball (fans) before the step and finish
+            // glass breaks after it
+            this.mechanics.beforeStep();
             this.physics.update(deltaTime);
+            this.mechanics.afterStep();
 
             // Record ball state if recording
             if (this.isRecording && this.ball && this.ball.isActive) {
@@ -519,7 +572,7 @@ export class Game {
             }
 
             // Update hook sway (idle animation)
-            if (this.currentState === 'MENU' && this.currentLevel >= 4) {
+            if (this.currentState === 'MENU' && this.hookSways()) {
                 this.hookSwayOffset = Math.sin(Date.now() / 800) * 10;
 
                 // Move ball with the hook sway
@@ -543,10 +596,15 @@ export class Game {
 
             this.targets.forEach(target => {
                 target.update(deltaTime);
-                if (this.ball) {
-                    target.checkCollection(this.ball);
+                if (this.ball && target.checkCollection(this.ball)) {
+                    this.mechanics.applyStarEffect(target);
                 }
             });
+
+            this.surfaces.forEach(surface => surface.update(deltaTime));
+            this.gates.forEach(gate => gate.update(deltaTime, this.ball));
+            this.fans.forEach(fan => fan.update(deltaTime));
+            this.popups.update(deltaTime);
 
             this.surfaces.forEach(surface => {
                 surface.handleMouseMove(this.input.mousePos.x, this.input.mousePos.y);
