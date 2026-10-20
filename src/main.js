@@ -4,11 +4,15 @@
 
 import { Game } from './game/index.js';
 import { getTotalLevels } from './levels.js';
+import { loadSavedLevel } from './progress.js';
 
-// Optional ?level=N in the URL jumps straight to a level
+// ?level=N in the URL wins, then the level played last, then level 1
 function getStartLevel() {
-    const n = parseInt(new URLSearchParams(window.location.search).get('level'), 10);
-    return Number.isInteger(n) && n >= 1 && n <= getTotalLevels() ? n : 1;
+    const valid = n => Number.isInteger(n) && n >= 1 && n <= getTotalLevels();
+    const fromUrl = parseInt(new URLSearchParams(window.location.search).get('level'), 10);
+    if (valid(fromUrl)) return fromUrl;
+    const saved = loadSavedLevel();
+    return valid(saved) ? saved : 1;
 }
 
 // Initialize the game when DOM is loaded

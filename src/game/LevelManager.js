@@ -25,7 +25,8 @@
 import * as Matter from 'matter-js';
 import { Bird } from '../bird.js';
 import { getLevel, getTotalLevels, getWorldStartingAt } from '../levels.js';
-import { levelHasSpecialMechanics, LEGACY_RESTITUTION } from '../mechanics.js';
+import { LEGACY_RESTITUTION } from '../mechanics.js';
+import { saveLevel } from '../progress.js';
 import { buildLevelEntities } from './levelEntities.js';
 
 export class LevelManager {
@@ -83,8 +84,8 @@ export class LevelManager {
         this.game.ui.refineButton.disabled = false;
 
         // Update UI
-        this.game.ui.levelDisplay.textContent = `Level ${levelId}`;
-        this.game.ui.levelName.textContent = level.name;
+        this.game.ui.showLevel(levelId, level.name);
+        saveLevel(levelId);
         this.game.ui.hintText.textContent = level.hint;
 
         // Pick star positions (randomized unless marked fixed)
@@ -99,7 +100,7 @@ export class LevelManager {
         this.game.gates = entities.gates;
         this.game.fans = entities.fans;
 
-        // World 3: the ball's own elasticity decides every bounce
+        // Toy levels: the ball's own elasticity decides every bounce
         this.game.physics.setWallRestitution(level.trueElasticity ? 0 : LEGACY_RESTITUTION);
         this.game.mechanics.setLevel({
             ball: entities.ball,
@@ -110,12 +111,10 @@ export class LevelManager {
         });
         this.game.popups.clear();
 
-        // The solver only simulates plain surfaces with a constant ball,
-        // so hints would be wrong on dynamic or World 3 levels
-        if (level.propertyPattern !== 'static' || levelHasSpecialMechanics(level)) {
-            const reason = level.propertyPattern !== 'static'
-                ? 'Hints not available for dynamic levels - feel the rhythm!'
-                : 'Hints not available for material levels - experiment!';
+        // The solver can't know when the player will release the ball, so
+        // hints would be wrong when the ball's bounce changes over time
+        if (level.propertyPattern !== 'static') {
+            const reason = 'Hints not available for dynamic levels - feel the rhythm!';
             this.game.ui.hintButton.disabled = true;
             this.game.ui.hintButton.title = reason;
             this.game.ui.refineButton.disabled = true;

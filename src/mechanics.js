@@ -1,5 +1,5 @@
 /**
- * World 3 mechanics: surface materials, star effects, ball weight, color gates.
+ * Toy mechanics: surface materials, star effects, ball weight, color gates.
  *
  * Pure data + functions (no DOM, no Matter.js) so rules are easy to test
  * and shared by the game and the headless level simulator.
@@ -100,16 +100,4 @@ export function fanDirection(dir) {
         case 'right': return { x: 1, y: 0 };
         default: return { x: 0, y: -1 };
     }
-}
-
-/**
- * True when a level uses any mechanic the AI solver doesn't simulate.
- */
-export function levelHasSpecialMechanics(level) {
-    if (level.trueElasticity) return true;
-    if (level.gates && level.gates.length > 0) return true;
-    if (level.fans && level.fans.length > 0) return true;
-    if (level.surfaces.some(s => s.material && s.material !== 'normal')) return true;
-    if (level.targets.some(t => t.effect)) return true;
-    return false;
 }

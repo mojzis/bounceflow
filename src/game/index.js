@@ -40,7 +40,7 @@ import { Ball } from '../ball.js';
 import { Surface } from '../surface.js';
 import { Target } from '../target.js';
 import { Bird } from '../bird.js';
-import { getLevel, getTotalLevels } from '../levels.js';
+import { getLevel, getTotalLevels, hookSways as levelHookSways } from '../levels.js';
 import { PhysicsManager } from './PhysicsManager.js';
 import { InputManager } from './InputManager.js';
 import { SolverSystem } from './SolverSystem.js';
@@ -106,7 +106,7 @@ export class Game {
         // Physics setup
         this.setupPhysics();
 
-        // World 3 mechanics (materials, gates, fans, power stars)
+        // Toy mechanics (materials, gates, fans, power stars)
         this.popups = new Popups();
         this.mechanics = new MechanicsSystem(this.engine, (type, data) => this.handleMechanicsEvent(type, data));
 
@@ -206,6 +206,17 @@ export class Game {
         this.ui.helpOverlay.classList.add('hidden');
     }
 
+    /**
+     * Jump to any level (level picker)
+     */
+    goToLevel(levelId) {
+        this.ui.worldTransitionOverlay.classList.add('hidden');
+        this.ui.victoryOverlay.classList.add('hidden');
+        this.input.releaseAllKeys();
+        this.currentLevel = levelId;
+        this.levelManager.loadLevel(levelId);
+    }
+
     startWorld() {
         // Hide world transition overlay and load the world's first level
         this.ui.worldTransitionOverlay.classList.add('hidden');
@@ -213,11 +224,10 @@ export class Game {
     }
 
     /**
-     * Steady hook: early levels and World 3 don't swing the ball.
+     * Once the solver is used the hook holds still, so its hint can be copied.
      */
     hookSways() {
-        const level = getLevel(this.currentLevel);
-        return this.currentLevel >= 4 && !level.steadyHook;
+        return levelHookSways(getLevel(this.currentLevel)) && !this.usedSolver;
     }
 
     handleMechanicsEvent(type, data) {

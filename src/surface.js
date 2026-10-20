@@ -3,7 +3,7 @@
  */
 
 import * as Matter from 'matter-js';
-import { pointNearLine, degToRad, radToDeg } from './utils.js';
+import { pointNearLine, degToRad, radToDeg, surfaceAngle } from './utils.js';
 import { getMaterial, LEGACY_RESTITUTION } from './mechanics.js';
 
 export class Surface {
@@ -130,8 +130,9 @@ export class Surface {
         if (this.locked || this.broken) return;
 
         if (this.isDragging) {
-            this.x = mx - this.dragOffset.x;
-            this.y = my - this.dragOffset.y;
+            // Whole pixels, so keyboard steps can land exactly on a hint
+            this.x = Math.round(mx - this.dragOffset.x);
+            this.y = Math.round(my - this.dragOffset.y);
             this.updatePhysicsBody();
         } else if (this.isRotating) {
             const currentAngle = Math.atan2(my - this.y, mx - this.x);
@@ -148,6 +149,11 @@ export class Surface {
     }
 
     handleMouseUp() {
+        if (this.isRotating) {
+            // Mouse rotation is smooth; settle on a whole degree when done
+            this.angle = Math.round(this.angle);
+            this.updatePhysicsBody();
+        }
         this.isDragging = false;
         this.isRotating = false;
     }
@@ -172,14 +178,14 @@ export class Surface {
 
     rotate(degrees) {
         if (this.locked) return;
-        this.angle += degrees;
+        this.angle = Math.round(this.angle + degrees);
         this.updatePhysicsBody();
     }
 
     move(dx, dy) {
         if (this.locked) return;
-        this.x += dx;
-        this.y += dy;
+        this.x = Math.round(this.x + dx);
+        this.y = Math.round(this.y + dy);
         this.updatePhysicsBody();
     }
 
@@ -269,13 +275,12 @@ export class Surface {
 
         // Show angle label during replay
         if (showAngle && !this.locked) {
-            const normalizedAngle = ((this.angle % 360) + 360) % 360; // Normalize to 0-360
             ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
             ctx.fillRect(this.x - 35, this.y - 40, 70, 25);
             ctx.fillStyle = '#FFE66D';
             ctx.font = 'bold 14px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(`${normalizedAngle.toFixed(0)}°`, this.x, this.y - 20);
+            ctx.fillText(`${surfaceAngle(this.angle)}°`, this.x, this.y - 20);
             ctx.textAlign = 'left';
         }
 

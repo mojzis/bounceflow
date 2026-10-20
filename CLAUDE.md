@@ -99,7 +99,7 @@ The game follows a **manager-based architecture** where the main Game class acts
 - Resets solver and replay state
 
 **`game/MechanicsSystem.js`** (~150 lines)
-- World 3 rules hooked into Matter.js `collisionStart`
+- Toy rules (materials, gates, fans, star effects) hooked into Matter.js `collisionStart`
 - Sets the bounce of every ball contact (materials, true elasticity)
 - Trampolines charge elasticity, sponges drain it, heavy balls smash glass
 - Color gates let matching balls pass (pair becomes a sensor)
@@ -168,12 +168,16 @@ Previous implementation used scattered boolean flags that could get into invalid
 
 **`levels.js`** - Level definitions array
 - Each level specifies: ball start position, surface configurations, target positions, property pattern
-- Optional World 3 fields are documented at the top of the file (materials, star effects, gates, fans, `trueElasticity`, `steadyHook`, fixed targets)
+- Optional toy fields are documented at the top of the file (materials, star effects, gates, fans, `trueElasticity`, `steadyHook`, fixed targets)
+- `hookSways(level)`: World 1 keeps the claw still; from World 2 it sways unless `steadyHook`
 - `WORLDS` holds the intro screen for each world; `getWorldStartingAt(id)`
 - `getLevel(id)` and `getTotalLevels()` helpers
-- 33 levels in 3 worlds: Bouncing (1-15), Elasticity (16-25), Materials & Mass (26-33)
+- 28 levels in 3 worlds: Bouncing (1-14), Elasticity (15-24), Materials & Mass (25-28)
+- World 1 brings in one toy every other level (3 trampoline, 5 heavy star + glass, 7 light star + fan, 9 bouncy star, 12 combo); World 3 adds sponges and gates and mixes everything
 
-**`mechanics.js`** - World 3 rules as data + pure functions (materials, weights, star effects, gates, fan force)
+**`mechanics.js`** - Toy rules as data + pure functions (materials, weights, star effects, gates, fan force)
+
+**`progress.js`** - Remembers the current level in localStorage (start order: `?level=N`, saved level, level 1)
 
 **`popups.js`** - Floating feedback text ("Boing!", "SMASH!")
 
@@ -190,7 +194,7 @@ Matter.js engine settings (in `PhysicsManager`):
 - Fixed timestep: 16.67ms (60Hz) to prevent tunneling
 - All physics bodies use low friction (0) and high restitution (0.95-0.99) for bouncy gameplay
 - Boundary walls positioned 25px outside canvas edges
-- Matter.js uses the **higher** restitution of two colliding bodies. In Worlds 1-2 surfaces are 0.99, so the ball's elasticity barely affects bounces. World 3 levels set `trueElasticity: true` and MechanicsSystem sets each contact's bounce so the ball's elasticity really counts.
+- Matter.js uses the **higher** restitution of two colliding bodies. On plain levels surfaces are 0.99, so the ball's elasticity barely affects bounces. Toy levels set `trueElasticity: true` and MechanicsSystem sets each contact's bounce so the ball's elasticity really counts.
 - **matter-js 0.20**: a body created with `isStatic: true` has no stored mass, so releasing it gives NaN positions. The ball is created dynamic and then made static.
 
 ### Key Systems
@@ -198,11 +202,13 @@ Matter.js engine settings (in `PhysicsManager`):
 **Solver System** (`SolverSystem`)
 - AI solver using simulated annealing algorithm
 - Generates smart surface configurations with heuristics
-- First surface intelligently placed below ball toward target
-- Runs physics simulations in temporary engine (300 frames max)
+- First movable surface intelligently placed below ball toward target
+- Runs `simulateLevel()` (the game's own entities), so hints work when copied; success = all stars
+- Hints use whole pixels/degrees; the ghost turns green when the player's surface matches
+- The hook stops swaying once the solver is used on a level
 - Visualizes attempts as ghost trajectories (last 20 failures shown)
 - Shows solution as cyan dashed surfaces with angle labels
-- Tracks best attempt when no solution found within 50 attempts
+- 300 attempts (5 per tick), 30% of them wild guesses anywhere; best attempt shown if none succeeds
 - Two modes:
   - **Explore**: Starts from scratch, wide exploration
   - **Refine**: Uses current player setup, focused refinement
@@ -223,7 +229,8 @@ Matter.js engine settings (in `PhysicsManager`):
 **Input System** (`InputManager` + `UIManager`)
 - Mouse: Left-click drag (move), right-click drag (rotate surfaces)
 - Touch: Single touch drag (move), handles mobile
-- Keyboard acceleration: Held keys speed up from 1x → 5x over 1 second
+- Keyboard: a tap is exactly one step (1° / 1px, Shift = 5° / 5px); holding repeats after 300 ms and speeds up
+- Surfaces snap to whole pixels and degrees; angles are shown in [-90°, 90°) (`surfaceAngle()` in utils)
 - Keyboard shortcuts:
   - `Space` - Release ball
   - `R` - Restart level
@@ -283,7 +290,7 @@ src/
 │   ├── UIManager.js           # DOM elements and keyboard shortcuts (~145 lines)
 │   ├── LevelManager.js        # Level loading and progression (~170 lines)
 │   ├── StateController.js     # State transitions, cleanup, recovery (~150 lines)
-│   ├── MechanicsSystem.js     # World 3 rules on the physics engine
+│   ├── MechanicsSystem.js     # Toy rules on the physics engine
 │   ├── levelEntities.js       # Builds level entities (game + tests)
 │   └── simulateLevel.js       # Headless level run for tests
 ├── ball.js                    # Ball entity with dynamic elasticity
@@ -292,9 +299,10 @@ src/
 ├── gate.js                    # Color gate (cyan/red)
 ├── fan.js                     # Fan air zone
 ├── bird.js                    # Flying obstacle
-├── mechanics.js               # World 3 rules (materials, weight, effects)
+├── mechanics.js               # Toy rules (materials, weight, effects)
+├── progress.js                # Saved level (localStorage)
 ├── popups.js                  # Floating feedback text
-├── levels.js                  # Level definitions + world intros (33 levels)
+├── levels.js                  # Level definitions + world intros (28 levels)
 ├── utils.js                   # Math/geometry utilities
 └── styles/
     └── style.css              # UI styling
@@ -322,10 +330,10 @@ npm run test:ui
 **Current coverage:**
 - `utils.test.js` - All utility functions (geometry, math, color)
 - `levels.test.js` - Level definition validation
-- `mechanics.test.js` - World 3 rules and small physics scenarios (trampoline, sponge, glass, gates, fans)
-- `world3.test.js` - Every World 3 level has a known solution, and removing its key mechanic breaks it
+- `mechanics.test.js` - Toy rules and small physics scenarios (trampoline, sponge, glass, gates, fans)
+- `toys.test.js` - Every toy level (`trueElasticity`) has a known solution, and removing its key mechanic breaks it
 
-When adding a World 3 level, add a solution to `world3.test.js`. A quick way to find one is a random search over the movable surfaces with `simulateLevel()`.
+When adding a toy level, add a solution to `toys.test.js`. A quick way to find one is a random search over the movable surfaces with `simulateLevel()`.
 
 **Test file location:** Place test files next to source files with `.test.js` suffix (e.g., `utils.test.js` next to `utils.js`)
 
@@ -334,7 +342,7 @@ When adding a World 3 level, add a solution to `world3.test.js`. A quick way to 
 ### Manual Testing
 
 Manual testing workflow for gameplay:
-1. Start dev server: `npm run dev` (add `?level=26` to the URL to jump to a level)
+1. Start dev server: `npm run dev` (the level picker or `?level=25` jumps to a level; reloads resume the last level)
 2. Test interactions in browser
 3. Verify solver works: Press `?` on any level
 4. Test replay: Complete level, verify replay button shows, click to watch replay with force vectors

@@ -14,7 +14,7 @@
  * - handleTouchStart(e): Process touch start events
  * - handleTouchMove(e): Process touch movement
  * - handleTouchEnd(e): Process touch end events
- * - processHeldKeys(): Update movement/rotation from held keys with acceleration
+ * - processHeldKeys(): Repeat movement/rotation for held keys (a tap is one exact step)
  * - trackKeyDown(key, shiftKey): Start tracking a held key
  * - trackKeyUp(key): Stop tracking a held key
  * - releaseAllKeys(): Forget all held keys
@@ -24,6 +24,13 @@
  * - heldKeys: Set of currently held keys
  * - keyHoldDuration: Map of key hold start times for acceleration
  */
+// Holding a key waits this long before repeating (ms)
+const KEY_REPEAT_DELAY = 300;
+// While held, rotation starts at one step per 80 ms and speeds up to one
+// per frame over about a second (fine taps, fast sweeps)
+const ROTATE_REPEAT_SLOW_MS = 80;
+const ROTATE_REPEAT_FAST_MS = 15;
+
 export class InputManager {
     constructor(game) {
         this.game = game;
@@ -114,57 +121,61 @@ export class InputManager {
     }
 
     processHeldKeys() {
-        // Skip if no surface selected
-        if (this.game.selectedSurfaceIndex < 0 || this.game.selectedSurfaceIndex >= this.game.surfaces.length) {
-            return;
-        }
+        if (!this.hasSelectedSurface()) return;
 
         const now = Date.now();
 
-        // Process each held key
         for (const [key, data] of this.keyHoldDuration.entries()) {
             const holdDuration = now - data.startTime;
 
-            // Calculate acceleration
-            let speed;
-            if (holdDuration < 200) {
-                speed = 1;
-            } else if (holdDuration < 1000) {
-                speed = 1 + ((holdDuration - 200) / 800) * 4;
+            // A tap is one exact step (done in trackKeyDown). Holding the
+            // key starts repeating after a short pause, like typing.
+            if (holdDuration < KEY_REPEAT_DELAY) continue;
+
+            if (this.isRotationKey(key, data.shiftKey)) {
+                // Rotation starts slow and countable, then speeds up
+                const held = holdDuration - KEY_REPEAT_DELAY;
+                const interval = Math.max(ROTATE_REPEAT_FAST_MS, ROTATE_REPEAT_SLOW_MS - held / 15);
+                if (now - data.lastRepeat < interval) continue;
+                data.lastRepeat = now;
+                this.applyKey(key, data.shiftKey, 1);
             } else {
-                speed = 5;
+                // Movement speeds up from 1x to 5x while held
+                const speed = Math.min(5, 1 + ((holdDuration - KEY_REPEAT_DELAY) / 800) * 4);
+                this.applyKey(key, data.shiftKey, speed);
             }
+        }
+    }
 
-            const shiftMultiplier = data.shiftKey ? 5 : 1;
-            const movementAmount = speed * shiftMultiplier;
-            const rotationAmount = data.shiftKey ? 5 : 1;
+    hasSelectedSurface() {
+        return this.game.selectedSurfaceIndex >= 0 && this.game.selectedSurfaceIndex < this.game.surfaces.length;
+    }
 
-            // Movement keys
-            if (key === 'w' || key === 'W' || key === 'ArrowUp') {
-                this.game.moveSelectedSurface(0, -movementAmount);
-            } else if (key === 's' || key === 'S' || key === 'ArrowDown') {
-                this.game.moveSelectedSurface(0, movementAmount);
-            } else if (key === 'a' || key === 'A') {
-                this.game.moveSelectedSurface(-movementAmount, 0);
-            } else if (key === 'd' || key === 'D') {
-                this.game.moveSelectedSurface(movementAmount, 0);
-            } else if (key === 'ArrowLeft') {
-                if (data.shiftKey) {
-                    this.game.rotateSelectedSurface(-rotationAmount);
-                } else {
-                    this.game.moveSelectedSurface(-movementAmount, 0);
-                }
-            } else if (key === 'ArrowRight') {
-                if (data.shiftKey) {
-                    this.game.rotateSelectedSurface(rotationAmount);
-                } else {
-                    this.game.moveSelectedSurface(movementAmount, 0);
-                }
-            } else if (key === 'q' || key === 'Q') {
-                this.game.rotateSelectedSurface(-rotationAmount);
-            } else if (key === 'e' || key === 'E') {
-                this.game.rotateSelectedSurface(rotationAmount);
-            }
+    isRotationKey(key, shiftKey) {
+        return key === 'q' || key === 'e' ||
+            (shiftKey && (key === 'ArrowLeft' || key === 'ArrowRight'));
+    }
+
+    /**
+     * One step for a key: rotation turns 1° (5° with Shift), movement moves
+     * `speed` px (x5 with Shift).
+     */
+    applyKey(key, shiftKey, speed) {
+        const move = speed * (shiftKey ? 5 : 1);
+        const turn = shiftKey ? 5 : 1;
+
+        if (key === 'w' || key === 'ArrowUp') {
+            this.game.moveSelectedSurface(0, -move);
+        } else if (key === 's' || key === 'ArrowDown') {
+            this.game.moveSelectedSurface(0, move);
+        } else if (key === 'a' || (key === 'ArrowLeft' && !shiftKey)) {
+            this.game.moveSelectedSurface(-move, 0);
+        } else if (key === 'd' || (key === 'ArrowRight' && !shiftKey)) {
+            this.game.moveSelectedSurface(move, 0);
+        } else if (key === 'q' || key === 'ArrowLeft') {
+            this.game.rotateSelectedSurface(-turn);
+        } else if (key === 'e' || key === 'ArrowRight') {
+            this.game.rotateSelectedSurface(turn);
         }
     }
 
@@ -182,7 +193,9 @@ export class InputManager {
         key = this.normalizeKey(key);
         if (!this.heldKeys.has(key)) {
             this.heldKeys.add(key);
-            this.keyHoldDuration.set(key, { startTime: Date.now(), shiftKey });
+            const now = Date.now();
+            this.keyHoldDuration.set(key, { startTime: now, lastRepeat: now, shiftKey });
+            if (this.hasSelectedSurface()) this.applyKey(key, shiftKey, 1);
         }
     }
 

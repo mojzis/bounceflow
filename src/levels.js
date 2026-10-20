@@ -1,7 +1,7 @@
 /**
  * Level definitions for BounceFlow prototype
  *
- * Optional World 3 fields (see mechanics.js):
+ * Optional toy fields (see mechanics.js), used from World 1 on:
  * - surfaces[].material: 'normal' | 'trampoline' | 'sponge' | 'glass'
  * - targets[].effect: 'bouncy' | 'soft' | 'heavy' | 'light' (power star)
  * - targets[].fixed: true to skip position randomization (stars in boxes)
@@ -9,10 +9,11 @@
  * - fans: [{ x, y, width, height, dir: 'up'|'down'|'left'|'right', strength }]
  * - trueElasticity: bounce uses the ball's real elasticity
  * - ballElasticity: starting elasticity for static levels
- * - steadyHook: the hook doesn't sway before release
+ * - steadyHook: the hook doesn't sway before release (World 2+; World 1 never sways)
  */
 
 export const LEVELS = [
+    // WORLD 1: BOUNCING - Levels 1-14 (a new toy every other level)
     {
         id: 1,
         name: "First Bounce",
@@ -44,56 +45,24 @@ export const LEVELS = [
     },
     {
         id: 3,
-        name: "The Climb",
-        ballStart: { x: 100, y: 340 },
+        name: "Boing!",
+        ballStart: { x: 150, y: 100 },
         surfaces: [
-            { x: 350, y: 420, width: 200, angle: 45, locked: false },
-            { x: 550, y: 350, width: 180, angle: -30, locked: false }
+            { x: 250, y: 380, width: 220, angle: 20, locked: false },
+            { x: 500, y: 500, width: 260, angle: 0, locked: true, material: 'trampoline' }
         ],
         targets: [
-            { x: 650, y: 380 }
+            { x: 640, y: 260 }
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Angle surfaces to bounce upward to the target!"
+        trueElasticity: true,
+        steadyHook: true,
+        ballElasticity: 0.6,
+        hint: "The blue trampoline is extra springy - bounce the ball onto it to reach the star!"
     },
     {
         id: 4,
-        name: "Double Target",
-        ballStart: { x: 400, y: 100 },
-        surfaces: [
-            { x: 300, y: 450, width: 250, angle: 0, locked: false },
-            { x: 550, y: 350, width: 150, angle: -45, locked: false },
-            { x: 200, y: 300, width: 180, angle: 30, locked: false }
-        ],
-        targets: [
-            { x: 150, y: 200 },
-            { x: 650, y: 180 }
-        ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "Collect both stars - adjust surfaces between bounces!"
-    },
-    {
-        id: 5,
-        name: "Triple Challenge",
-        ballStart: { x: 100, y: 150 },
-        surfaces: [
-            { x: 350, y: 450, width: 180, angle: 20, locked: false },
-            { x: 550, y: 380, width: 160, angle: -25, locked: false },
-            { x: 400, y: 300, width: 140, angle: 45, locked: false }
-        ],
-        targets: [
-            { x: 300, y: 250 },
-            { x: 600, y: 250 },
-            { x: 450, y: 180 }
-        ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "Three stars! Master surface control to collect them all!"
-    },
-    {
-        id: 6,
         name: "Obstacle Course",
         ballStart: { x: 200, y: 100 },
         surfaces: [
@@ -109,25 +78,29 @@ export const LEVELS = [
         hint: "Gray surfaces are locked - work around them!"
     },
     {
-        id: 7,
-        name: "Pinball",
-        ballStart: { x: 100, y: 150 },
+        id: 5,
+        name: "Heavy Metal",
+        ballStart: { x: 150, y: 100 },
         surfaces: [
-            { x: 250, y: 400, width: 160, angle: 45, locked: false },
-            { x: 450, y: 450, width: 180, angle: -30, locked: true },
-            { x: 600, y: 350, width: 140, angle: 60, locked: false },
-            { x: 350, y: 250, width: 150, angle: -45, locked: true }
+            { x: 230, y: 400, width: 220, angle: 20, locked: false },
+            { x: 520, y: 400, width: 180, angle: 0, locked: true, material: 'glass' },
+            { x: 440, y: 465, width: 120, angle: 90, locked: true },
+            { x: 600, y: 465, width: 120, angle: 90, locked: true },
+            { x: 520, y: 530, width: 180, angle: 0, locked: true }
         ],
         targets: [
-            { x: 200, y: 250 },
-            { x: 700, y: 200 }
+            { x: 150, y: 260, effect: 'heavy' },
+            { x: 520, y: 470, fixed: true }
         ],
         propertyPattern: 'static',
         cycleSpeed: 0,
-        hint: "Navigate through the pinball machine!"
+        trueElasticity: true,
+        steadyHook: true,
+        ballElasticity: 0.8,
+        hint: "Stars with a ring change the ball. Grab the heavy star, then smash the glass!"
     },
     {
-        id: 8,
+        id: 6,
         name: "Narrow Gap",
         ballStart: { x: 150, y: 100 },
         surfaces: [
@@ -144,7 +117,122 @@ export const LEVELS = [
         hint: "Thread the needle between the locked surfaces!"
     },
     {
+        id: 7,
+        name: "Feather Float",
+        ballStart: { x: 150, y: 100 },
+        surfaces: [
+            { x: 300, y: 420, width: 220, angle: 20, locked: false }
+        ],
+        fans: [
+            { x: 470, y: 340, width: 260, height: 440, dir: 'up', strength: 1.3 }
+        ],
+        targets: [
+            { x: 150, y: 260, effect: 'light' },
+            { x: 480, y: 150 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        trueElasticity: true,
+        steadyHook: true,
+        ballElasticity: 0.6,
+        hint: "Fans blow light things away. Become light as a feather and ride the wind up!"
+    },
+    {
+        id: 8,
+        name: "Zigzag",
+        ballStart: { x: 100, y: 80 },
+        surfaces: [
+            { x: 200, y: 200, width: 140, angle: -45, locked: true },
+            { x: 380, y: 280, width: 140, angle: 45, locked: true },
+            { x: 560, y: 360, width: 140, angle: -45, locked: true },
+            { x: 300, y: 400, width: 120, angle: 30, locked: false },
+            { x: 500, y: 450, width: 120, angle: -30, locked: false }
+        ],
+        targets: [
+            { x: 680, y: 420 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Navigate the zigzag obstacle course!"
+    },
+    {
         id: 9,
+        name: "Power Star",
+        ballStart: { x: 150, y: 100 },
+        surfaces: [
+            { x: 260, y: 460, width: 240, angle: 20, locked: false }
+        ],
+        targets: [
+            { x: 150, y: 260, effect: 'bouncy' },
+            { x: 450, y: 350 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        trueElasticity: true,
+        steadyHook: true,
+        ballElasticity: 0.5,
+        hint: "This ball is soft. Grab the bouncy star first, then bounce up to the other star!"
+    },
+    {
+        id: 10,
+        name: "Precision Strike",
+        ballStart: { x: 400, y: 100 },
+        surfaces: [
+            { x: 220, y: 280, width: 160, angle: 15, locked: true },
+            { x: 580, y: 280, width: 160, angle: -15, locked: true },
+            { x: 400, y: 420, width: 100, angle: 0, locked: false },
+            { x: 300, y: 350, width: 80, angle: 30, locked: false },
+            { x: 500, y: 350, width: 80, angle: -30, locked: false }
+        ],
+        targets: [
+            { x: 400, y: 200 },
+            { x: 250, y: 380 },
+            { x: 550, y: 380 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Thread through tight gaps with precise angles!"
+    },
+    {
+        id: 11,
+        name: "The Climb",
+        ballStart: { x: 100, y: 340 },
+        surfaces: [
+            { x: 350, y: 420, width: 200, angle: 45, locked: false },
+            { x: 550, y: 350, width: 180, angle: -30, locked: false }
+        ],
+        targets: [
+            { x: 650, y: 380 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        hint: "Angle surfaces to bounce upward to the target!"
+    },
+    {
+        id: 12,
+        name: "Toy Box",
+        ballStart: { x: 150, y: 100 },
+        surfaces: [
+            { x: 260, y: 420, width: 200, angle: 20, locked: false },
+            { x: 470, y: 560, width: 220, angle: -10, locked: true, material: 'trampoline' },
+            { x: 650, y: 280, width: 160, angle: 0, locked: true, material: 'glass' },
+            { x: 580, y: 340, width: 110, angle: 90, locked: true },
+            { x: 720, y: 340, width: 110, angle: 90, locked: true },
+            { x: 650, y: 400, width: 160, angle: 0, locked: true }
+        ],
+        targets: [
+            { x: 150, y: 250, effect: 'heavy' },
+            { x: 650, y: 350, fixed: true }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        trueElasticity: true,
+        steadyHook: true,
+        ballElasticity: 0.6,
+        hint: "Get heavy, bounce off the trampoline, and smash into the glass box!"
+    },
+    {
+        id: 13,
         name: "Chain Reaction",
         ballStart: { x: 100, y: 50 },
         surfaces: [
@@ -163,7 +251,7 @@ export const LEVELS = [
         hint: "Create a perfect chain of bounces!"
     },
     {
-        id: 10,
+        id: 14,
         name: "Grand Finale",
         ballStart: { x: 400, y: 100 },
         surfaces: [
@@ -184,107 +272,9 @@ export const LEVELS = [
         cycleSpeed: 0,
         hint: "The ultimate challenge - collect all four stars!"
     },
-    {
-        id: 11,
-        name: "Zigzag",
-        ballStart: { x: 100, y: 80 },
-        surfaces: [
-            { x: 200, y: 200, width: 140, angle: -45, locked: true },
-            { x: 380, y: 280, width: 140, angle: 45, locked: true },
-            { x: 560, y: 360, width: 140, angle: -45, locked: true },
-            { x: 300, y: 400, width: 120, angle: 30, locked: false },
-            { x: 500, y: 450, width: 120, angle: -30, locked: false }
-        ],
-        targets: [
-            { x: 680, y: 420 }
-        ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "Navigate the zigzag obstacle course!"
-    },
-    {
-        id: 12,
-        name: "The Catapult",
-        ballStart: { x: 150, y: 80 },
-        surfaces: [
-            { x: 250, y: 470, width: 200, angle: 65, locked: false },
-            { x: 500, y: 200, width: 180, angle: -20, locked: false },
-            { x: 650, y: 350, width: 140, angle: 45, locked: false }
-        ],
-        targets: [
-            { x: 700, y: 150 },
-            { x: 400, y: 120 }
-        ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "Launch high with steep angles!"
-    },
-    {
-        id: 13,
-        name: "Precision Strike",
-        ballStart: { x: 400, y: 100 },
-        surfaces: [
-            { x: 220, y: 280, width: 160, angle: 15, locked: true },
-            { x: 580, y: 280, width: 160, angle: -15, locked: true },
-            { x: 400, y: 420, width: 100, angle: 0, locked: false },
-            { x: 300, y: 350, width: 80, angle: 30, locked: false },
-            { x: 500, y: 350, width: 80, angle: -30, locked: false }
-        ],
-        targets: [
-            { x: 400, y: 200 },
-            { x: 250, y: 380 },
-            { x: 550, y: 380 }
-        ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "Thread through tight gaps with precise angles!"
-    },
-    {
-        id: 14,
-        name: "Multi-Layer",
-        ballStart: { x: 100, y: 100 },
-        surfaces: [
-            { x: 200, y: 200, width: 180, angle: 0, locked: true },
-            { x: 200, y: 320, width: 180, angle: 0, locked: true },
-            { x: 200, y: 440, width: 180, angle: 0, locked: true },
-            { x: 450, y: 250, width: 120, angle: 45, locked: false },
-            { x: 450, y: 380, width: 120, angle: -45, locked: false },
-            { x: 650, y: 300, width: 100, angle: 30, locked: false }
-        ],
-        targets: [
-            { x: 700, y: 150 },
-            { x: 550, y: 350 },
-            { x: 700, y: 450 }
-        ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "Bounce between the layers to collect all stars!"
-    },
+    // WORLD 2: ELASTICITY - Levels 15-24
     {
         id: 15,
-        name: "The Gauntlet",
-        ballStart: { x: 50, y: 100 },
-        surfaces: [
-            { x: 150, y: 300, width: 140, angle: 50, locked: false },
-            { x: 280, y: 450, width: 120, angle: -30, locked: true },
-            { x: 420, y: 350, width: 140, angle: 40, locked: false },
-            { x: 560, y: 250, width: 100, angle: -50, locked: true },
-            { x: 680, y: 380, width: 120, angle: 35, locked: false },
-            { x: 400, y: 180, width: 100, angle: 0, locked: false }
-        ],
-        targets: [
-            { x: 200, y: 200 },
-            { x: 450, y: 250 },
-            { x: 680, y: 200 },
-            { x: 750, y: 320 }
-        ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "Master the gauntlet - precision and patience required!"
-    },
-    // WORLD 2: ELASTICITY - Levels 16-25
-    {
-        id: 16,
         name: "The Wave Begins",
         ballStart: { x: 150, y: 100 },
         surfaces: [
@@ -298,7 +288,7 @@ export const LEVELS = [
         hint: "Watch the ball's color! Release when it's cyan (bouncy) to reach the high target."
     },
     {
-        id: 17,
+        id: 16,
         name: "Low and High",
         ballStart: { x: 150, y: 100 },
         surfaces: [
@@ -314,7 +304,7 @@ export const LEVELS = [
         hint: "Collect the low star while red (low bounce), then wait for cyan to reach the high star!"
     },
     {
-        id: 18,
+        id: 17,
         name: "Bounce Rhythm",
         ballStart: { x: 100, y: 150 },
         surfaces: [
@@ -331,7 +321,7 @@ export const LEVELS = [
         hint: "Create a rhythm - each bounce happens at a different elasticity!"
     },
     {
-        id: 19,
+        id: 18,
         name: "The Pulse",
         ballStart: { x: 200, y: 100 },
         surfaces: [
@@ -346,7 +336,7 @@ export const LEVELS = [
         hint: "Wait for the pulse! The ball briefly becomes super bouncy."
     },
     {
-        id: 20,
+        id: 19,
         name: "Locked Rhythm",
         ballStart: { x: 150, y: 80 },
         surfaces: [
@@ -364,7 +354,7 @@ export const LEVELS = [
         hint: "Navigate through the gap - high elasticity helps you climb!"
     },
     {
-        id: 21,
+        id: 20,
         name: "Double Pulse",
         ballStart: { x: 100, y: 100 },
         surfaces: [
@@ -382,7 +372,7 @@ export const LEVELS = [
         hint: "Three stars, multiple pulses - timing is everything!"
     },
     {
-        id: 22,
+        id: 21,
         name: "Wave Maze",
         ballStart: { x: 400, y: 100 },
         surfaces: [
@@ -402,7 +392,7 @@ export const LEVELS = [
         hint: "Plan your path through the maze - elasticity determines which route works!"
     },
     {
-        id: 23,
+        id: 22,
         name: "Cascade Timing",
         ballStart: { x: 100, y: 50 },
         surfaces: [
@@ -422,7 +412,7 @@ export const LEVELS = [
         hint: "The cascade creates a rhythm - flow with it!"
     },
     {
-        id: 24,
+        id: 23,
         name: "Pulse Precision",
         ballStart: { x: 150, y: 100 },
         surfaces: [
@@ -441,7 +431,7 @@ export const LEVELS = [
         hint: "Thread the needle during the pulse - precision required!"
     },
     {
-        id: 25,
+        id: 24,
         name: "Elasticity Mastery",
         ballStart: { x: 50, y: 100 },
         surfaces: [
@@ -463,27 +453,9 @@ export const LEVELS = [
         cycleSpeed: 0.0016,
         hint: "The ultimate elasticity challenge - use everything you've learned!"
     },
-    // WORLD 3: MATERIALS & MASS - Levels 26-33
+    // WORLD 3: MATERIALS & MASS - Levels 25-28
     {
-        id: 26,
-        name: "Boing!",
-        ballStart: { x: 150, y: 100 },
-        surfaces: [
-            { x: 250, y: 400, width: 180, angle: 25, locked: false },
-            { x: 520, y: 480, width: 220, angle: 8, locked: true, material: 'trampoline' }
-        ],
-        targets: [
-            { x: 680, y: 300 }
-        ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        trueElasticity: true,
-        ballElasticity: 0.6,
-        steadyHook: true,
-        hint: "The blue trampoline is extra springy - bounce the ball onto it to reach the star!"
-    },
-    {
-        id: 27,
+        id: 25,
         name: "Squish",
         ballStart: { x: 150, y: 80 },
         surfaces: [
@@ -507,7 +479,7 @@ export const LEVELS = [
         hint: "Red gates only open for soft balls. Squish the ball on the sponge first!"
     },
     {
-        id: 28,
+        id: 26,
         name: "Charge Up",
         ballStart: { x: 120, y: 100 },
         surfaces: [
@@ -532,68 +504,7 @@ export const LEVELS = [
         hint: "Cyan gates only open for bouncy balls. Each trampoline bounce charges the ball up!"
     },
     {
-        id: 29,
-        name: "Power Star",
-        ballStart: { x: 150, y: 100 },
-        surfaces: [
-            { x: 250, y: 440, width: 180, angle: 20, locked: false }
-        ],
-        targets: [
-            { x: 150, y: 250, effect: 'bouncy' },
-            { x: 450, y: 300 }
-        ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        trueElasticity: true,
-        ballElasticity: 0.5,
-        steadyHook: true,
-        hint: "Stars with a ring change the ball. Grab the bouncy star, then bounce up high!"
-    },
-    {
-        id: 30,
-        name: "Heavy Metal",
-        ballStart: { x: 150, y: 100 },
-        surfaces: [
-            { x: 220, y: 380, width: 180, angle: 20, locked: false },
-            { x: 500, y: 400, width: 170, angle: 0, locked: true, material: 'glass' },
-            { x: 420, y: 465, width: 120, angle: 90, locked: true },
-            { x: 580, y: 465, width: 120, angle: 90, locked: true },
-            { x: 500, y: 530, width: 180, angle: 0, locked: true }
-        ],
-        targets: [
-            { x: 150, y: 250, effect: 'heavy' },
-            { x: 500, y: 470, fixed: true }
-        ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        trueElasticity: true,
-        ballElasticity: 0.8,
-        steadyHook: true,
-        hint: "Glass only breaks under a heavy ball. Get heavy first, then smash through!"
-    },
-    {
-        id: 31,
-        name: "Feather Float",
-        ballStart: { x: 150, y: 100 },
-        surfaces: [
-            { x: 300, y: 420, width: 180, angle: 20, locked: false }
-        ],
-        fans: [
-            { x: 450, y: 340, width: 240, height: 440, dir: 'up', strength: 1.3 }
-        ],
-        targets: [
-            { x: 150, y: 260, effect: 'light' },
-            { x: 470, y: 140 }
-        ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        trueElasticity: true,
-        ballElasticity: 0.6,
-        steadyHook: true,
-        hint: "Fans blow light things away. Become light as a feather and ride the wind up!"
-    },
-    {
-        id: 32,
+        id: 27,
         name: "Against the Wind",
         ballStart: { x: 150, y: 80 },
         surfaces: [
@@ -617,7 +528,7 @@ export const LEVELS = [
         hint: "The wind pushes the ball back. A heavy ball can punch right through it!"
     },
     {
-        id: 33,
+        id: 28,
         name: "Materials Mastery",
         ballStart: { x: 120, y: 80 },
         surfaces: [
@@ -652,7 +563,7 @@ export const LEVELS = [
 export const WORLDS = [
     {
         id: 2,
-        startLevel: 16,
+        startLevel: 15,
         title: 'ELASTICITY',
         subtitle: 'When Bouncy Becomes a Variable',
         description: "The ball's bounce changes with time. Watch the colors, feel the rhythm, master the timing!",
@@ -663,18 +574,26 @@ export const WORLDS = [
     },
     {
         id: 3,
-        startLevel: 26,
+        startLevel: 25,
         title: 'MATERIALS & MASS',
-        subtitle: 'Everything Changes the Ball',
-        description: 'Now the bounce is real: soft balls barely bounce, bouncy balls fly. What the ball touches changes it!',
+        subtitle: 'Mix All the Toys',
+        description: 'Remember the trampolines, glass, fans and power stars? Now they work together, with some new friends!',
         mechanics: [
-            { name: 'Trampolines & Sponges', text: 'Trampolines charge the ball up, sponges soak up its bounce' },
-            { name: 'Color Gates', text: 'Cyan gates let bouncy balls through, red gates let soft balls through' },
-            { name: 'Power Stars', text: 'Stars with a ring make the ball bouncy, soft, heavy or light' },
-            { name: 'Glass & Fans', text: 'Heavy balls smash glass; fans blow light balls around' }
+            { name: 'Sponges (new)', text: 'Sponges soak up the bounce and make the ball soft' },
+            { name: 'Color Gates (new)', text: 'Cyan gates let bouncy balls through, red gates let soft balls through' },
+            { name: 'Trampolines', text: 'Each trampoline bounce charges the ball up' },
+            { name: 'Power Stars, Glass & Fans', text: 'Heavy balls smash glass; light balls ride the wind' }
         ]
     }
 ];
+
+/**
+ * World 1 keeps the hook still so a good setup always works the same way.
+ * From World 2 on it sways unless the level says steadyHook.
+ */
+export function hookSways(level) {
+    return level.id >= WORLDS[0].startLevel && !level.steadyHook;
+}
 
 /**
  * World whose first level is levelId, or null.

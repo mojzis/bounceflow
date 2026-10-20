@@ -1,5 +1,5 @@
 /**
- * Unit tests for World 3 mechanics rules and their physics behavior
+ * Unit tests for toy mechanics rules and their physics behavior
  */
 
 import { describe, it, expect, vi } from 'vitest';
@@ -8,12 +8,10 @@ import {
     contactRestitution,
     gateIsOpen,
     breaksGlass,
-    levelHasSpecialMechanics,
     LEGACY_RESTITUTION
 } from './mechanics.js';
 import { Ball } from './ball.js';
 import { simulateLevel } from './game/simulateLevel.js';
-import { LEVELS } from './levels.js';
 
 vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -48,20 +46,6 @@ describe('gates and glass', () => {
         expect(breaksGlass('heavy')).toBe(true);
         expect(breaksGlass('normal')).toBe(false);
         expect(breaksGlass('light')).toBe(false);
-    });
-});
-
-describe('levelHasSpecialMechanics', () => {
-    it('is false for World 1 levels so the solver stays available', () => {
-        LEVELS.filter(l => l.id <= 15).forEach(level => {
-            expect(levelHasSpecialMechanics(level)).toBe(false);
-        });
-    });
-
-    it('is true for World 3 levels', () => {
-        LEVELS.filter(l => l.id >= 26).forEach(level => {
-            expect(levelHasSpecialMechanics(level)).toBe(true);
-        });
     });
 });
 
