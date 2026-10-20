@@ -19,7 +19,16 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Lint (ESLint, config in eslint.config.js)
+npm run lint
+npm run lint:fix
+
+# Everything CI runs: lint + tests + build
+npm run ci
 ```
+
+CI (`.github/workflows/ci.yml`) runs lint, tests and build on every push to main and on pull requests.
 
 ## Git Commit Convention
 

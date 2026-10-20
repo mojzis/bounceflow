@@ -70,7 +70,7 @@ export class InputManager {
         };
     }
 
-    handleMouseUp(e) {
+    handleMouseUp() {
         this.isMouseDown = false;
         this.game.canvas.classList.remove('dragging');
         this.game.surfaces.forEach(surface => surface.handleMouseUp());

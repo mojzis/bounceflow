@@ -36,11 +36,7 @@
  */
 
 import * as Matter from 'matter-js';
-import { Ball } from '../ball.js';
-import { Surface } from '../surface.js';
-import { Target } from '../target.js';
-import { Bird } from '../bird.js';
-import { getLevel, getTotalLevels, hookSways as levelHookSways } from '../levels.js';
+import { getLevel, hookSways as levelHookSways } from '../levels.js';
 import { PhysicsManager } from './PhysicsManager.js';
 import { InputManager } from './InputManager.js';
 import { SolverSystem } from './SolverSystem.js';
@@ -573,7 +569,7 @@ export class Game {
             // Mechanics push the ball (fans) before the step and finish
             // glass breaks after it
             this.mechanics.beforeStep();
-            this.physics.update(deltaTime);
+            this.physics.update();
             this.mechanics.afterStep();
 
             // Record ball state if recording
