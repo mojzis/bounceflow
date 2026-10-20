@@ -41,8 +41,8 @@ export function simulateLevel(level, options = {}) {
     const events = [];
     const mechanics = new MechanicsSystem(physics.engine, type => events.push(type));
     const entities = buildLevelEntities(level, physics.world, targetPositions, overrides);
-    const { ball, surfaces, targets, gates, fans } = entities;
-    mechanics.setLevel({ ball, surfaces, gates, fans, trueElasticity: !!level.trueElasticity });
+    const { ball, surfaces, targets, gates, fans, bumpers, portals } = entities;
+    mechanics.setLevel({ ball, surfaces, gates, fans, bumpers, portals, trueElasticity: !!level.trueElasticity });
 
     // Ball-surface impacts, for the solver's hint drawing
     const impacts = [];

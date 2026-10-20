@@ -22,7 +22,9 @@ export const MATERIALS = {
     normal:     { restitution: null, charge: 0,     color: '#2D2D2D', label: 'Normal' },
     trampoline: { restitution: 1.05, charge: 0.15,  color: '#4ECDC4', label: 'Trampoline' },
     sponge:     { restitution: 0.15, charge: -0.25, color: '#FF8C69', label: 'Sponge' },
-    glass:      { restitution: null, charge: 0,     color: '#BEE9FF', label: 'Glass' }
+    glass:      { restitution: null, charge: 0,     color: '#BEE9FF', label: 'Glass' },
+    // Bounces like a plain surface, then puffs away (one bounce only)
+    cloud:      { restitution: null, charge: 0,     color: '#FFFFFF', label: 'Cloud' }
 };
 
 /**
@@ -54,6 +56,13 @@ export const GATES = {
     cyan: { color: '#4ECDC4', test: e => e >= 0.7, text: 'Only bouncy balls pass' },
     red:  { color: '#FF6B6B', test: e => e <= 0.5, text: 'Only soft balls pass' }
 };
+
+// Speed a bumper kicks the ball away with (px per physics step),
+// no matter how fast the ball hit it
+export const BUMPER_SPEED = 10;
+
+// Ball center within this distance of a portal enters it
+export const PORTAL_RADIUS = 30;
 
 // Constant fan force; acceleration = force / mass, so light balls fly
 export const FAN_FORCE = 0.00038;
@@ -88,6 +97,23 @@ export function gateIsOpen(gateType, ballElasticity) {
  */
 export function breaksGlass(weight) {
     return weight === 'heavy';
+}
+
+/**
+ * Clouds puff away after the ball bounces off them once.
+ */
+export function vanishesAfterBounce(material) {
+    return material === 'cloud';
+}
+
+/**
+ * Velocity after a bumper hit: straight away from the bumper's center.
+ */
+export function bumperKick(bumper, ballPos, speed = BUMPER_SPEED) {
+    const dx = ballPos.x - bumper.x;
+    const dy = ballPos.y - bumper.y;
+    const len = Math.hypot(dx, dy) || 1;
+    return { x: (dx / len) * speed, y: (dy / len) * speed };
 }
 
 /**

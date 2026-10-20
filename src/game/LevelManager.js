@@ -99,6 +99,8 @@ export class LevelManager {
         this.game.targets = entities.targets;
         this.game.gates = entities.gates;
         this.game.fans = entities.fans;
+        this.game.bumpers = entities.bumpers;
+        this.game.portals = entities.portals;
 
         // Toy levels: the ball's own elasticity decides every bounce
         this.game.physics.setWallRestitution(level.trueElasticity ? 0 : LEGACY_RESTITUTION);
@@ -107,6 +109,8 @@ export class LevelManager {
             surfaces: entities.surfaces,
             gates: entities.gates,
             fans: entities.fans,
+            bumpers: entities.bumpers,
+            portals: entities.portals,
             trueElasticity: !!level.trueElasticity
         });
         this.game.popups.clear();
@@ -214,6 +218,9 @@ export class LevelManager {
         (this.game.gates || []).forEach(gate => gate.remove());
         this.game.gates = [];
         this.game.fans = [];
+        (this.game.bumpers || []).forEach(bumper => bumper.remove());
+        this.game.bumpers = [];
+        this.game.portals = [];
 
         this.game.targets = [];
     }

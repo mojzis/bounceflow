@@ -16,22 +16,32 @@ vi.spyOn(console, 'warn').mockImplementation(() => {});
 
 // Movable surface positions, in order of the level's unlocked surfaces
 const SOLUTIONS = {
-    // World 1: one new toy at a time
-    3: [{ x: 84, y: 227, angle: 39 }],
-    5: [{ x: 67, y: 324, angle: 20 }],
-    7: [{ x: 100, y: 434, angle: 27 }],
-    9: [{ x: 121, y: 353, angle: 25 }],
+    // World 1: a toy on every level after the first, combined from level 8
+    2: [{ x: 162, y: 249, angle: 20 }],
+    3: [{ x: 147, y: 275, angle: 25 }],
+    4: [{ x: 190, y: 589, angle: 12 }],
+    5: [{ x: 163, y: 439, angle: 15 }],
+    6: [{ x: 169, y: 507, angle: 21 }],
+    7: [{ x: 204, y: 308, angle: 18 }],
+    8: [{ x: 408, y: 360, angle: -50 }],
+    9: [{ x: 135, y: 390, angle: 22 }],
+    10: [{ x: 185, y: 141, angle: 11 }],
+    11: [{ x: 86, y: 285, angle: 49 }],
     12: [{ x: 89, y: 230, angle: 40 }],
+    13: [{ x: 156, y: 298, angle: 38 }],
+    14: [{ x: 555, y: 191, angle: -21 }, { x: 771, y: 311, angle: 41 }],
     // World 3: toys combined
     25: [{ x: 374, y: 317, angle: -2 }],
-    26: [{ x: 566, y: 362, angle: -10 }, { x: 605, y: 174, angle: -27 }],
+    26: [{ x: 231, y: 290, angle: 17 }, { x: 321, y: 476, angle: 14 }],
     27: [{ x: 227, y: 264, angle: 15 }],
     28: [{ x: 160, y: 468, angle: 15 }, { x: 611, y: 203, angle: 53 }]
 };
 
 // What to take away to show the level needs its mechanic
 const CONTROLS = {
-    3: 'materials', 5: 'effects', 7: 'effects', 9: 'effects', 12: 'materials',
+    2: 'bumpers', 3: 'materials', 4: 'materials', 5: 'effects', 6: 'portals',
+    7: 'effects', 8: 'bumpers', 9: 'effects', 10: 'portals', 11: 'bumpers',
+    12: 'materials', 13: 'portals', 14: 'portals',
     25: 'materials', 26: 'materials', 27: 'effects', 28: 'materials'
 };
 
@@ -46,8 +56,11 @@ function withoutMechanic(level, kind) {
     const copy = structuredClone(level);
     if (kind === 'materials') {
         copy.surfaces.forEach(s => { if (s.material !== 'glass') delete s.material; });
-    } else {
+    } else if (kind === 'effects') {
         copy.targets.forEach(t => delete t.effect);
+    } else {
+        // 'bumpers', 'portals', 'fans', 'gates': take them away
+        delete copy[kind];
     }
     return copy;
 }
@@ -60,8 +73,10 @@ describe('Toy levels', () => {
         expect(getWorldStartingAt(26)).toBeNull();
     });
 
-    it('introduces toys in World 1', () => {
-        expect(toyLevels.filter(l => l.id < 15).length).toBeGreaterThanOrEqual(4);
+    it('has a toy on every World 1 level after the first', () => {
+        expect(toyLevels.filter(l => l.id < 15).map(l => l.id)).toEqual(
+            Array.from({ length: 13 }, (_, i) => i + 2)
+        );
     });
 
     it('has a known solution for every level', () => {
@@ -75,6 +90,12 @@ describe('Toy levels', () => {
             HEIGHTS.forEach(height => {
                 const result = simulateLevel(level, { surfaces: overrides, height });
                 expect(result.success, `height ${height}`).toBe(true);
+            });
+        });
+
+        it(`level ${level.id} (${level.name}) isn't won by its starting layout`, () => {
+            HEIGHTS.forEach(height => {
+                expect(simulateLevel(level, { height }).success, `height ${height}`).toBe(false);
             });
         });
 

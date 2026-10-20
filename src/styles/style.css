@@ -105,7 +105,7 @@ body {
 
 #controls {
     position: absolute;
-    top: 120px;
+    top: 145px;
     right: 20px;
     display: flex;
     flex-direction: column;
@@ -694,6 +694,7 @@ kbd {
 }
 
 #level-select {
+    pointer-events: auto; /* #ui ignores clicks so the canvas gets them */
     font: inherit;
     font-size: 14px;
     font-weight: 600;

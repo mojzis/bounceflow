@@ -14,6 +14,9 @@ export default defineConfig({
       include: [/matter-js/, /node_modules/],
     },
   },
+  test: {
+    include: ['src/**/*.test.js'],
+  },
   optimizeDeps: {
     include: ['matter-js'],
   },

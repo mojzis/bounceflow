@@ -7,6 +7,8 @@ import { Surface } from '../surface.js';
 import { Target } from '../target.js';
 import { Gate } from '../gate.js';
 import { Fan } from '../fan.js';
+import { Bumper } from '../bumper.js';
+import { Portal } from '../portal.js';
 
 /**
  * @param {object} level - level definition
@@ -46,5 +48,11 @@ export function buildLevelEntities(level, world, targetPositions, surfaceOverrid
         new Fan(f.x, f.y, f.width, f.height, f.dir, f.strength ?? 1)
     );
 
-    return { ball, surfaces, targets, gates, fans };
+    const bumpers = (level.bumpers || []).map(b =>
+        new Bumper(b.x, b.y, b.radius ?? 28, world)
+    );
+
+    const portals = (level.portals || []).map(p => new Portal(p.a, p.b));
+
+    return { ball, surfaces, targets, gates, fans, bumpers, portals };
 }

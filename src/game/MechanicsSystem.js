@@ -8,14 +8,17 @@
  * - Color gates let matching balls pass through
  * - Fans push the ball (push is the same force for every weight)
  * - Power stars change the ball's elasticity or weight
+ * - Bumpers kick the ball away at a fixed speed
+ * - Clouds puff away after one bounce
+ * - Portals move the ball to their other end, keeping its velocity
  *
  * No DOM access, so the same rules run in the game and in tests
  * (see simulateLevel.js).
  *
  * Public API:
- * - setLevel({ ball, surfaces, gates, fans, trueElasticity })
+ * - setLevel({ ball, surfaces, gates, fans, bumpers, portals, trueElasticity })
  * - beforeStep(): apply fan forces, call before Engine.update
- * - afterStep(): finish glass breaks, call after Engine.update
+ * - afterStep(): finish glass breaks, clouds, bumper kicks and portals; call after Engine.update
  * - applyStarEffect(target): call when a star is collected
  * - onEvent(type, data): optional callback for feedback (popups)
  */
@@ -23,6 +26,8 @@ import * as Matter from 'matter-js';
 import {
     contactRestitution,
     breaksGlass,
+    bumperKick,
+    vanishesAfterBounce,
     getMaterial,
     STAR_EFFECTS
 } from '../mechanics.js';
@@ -35,18 +40,26 @@ export class MechanicsSystem {
         this.surfaceByBody = new Map();
         this.gateByBody = new Map();
         this.fans = [];
+        this.bumperByBody = new Map();
+        this.portals = [];
         this.trueElasticity = false;
         this.pendingShatter = [];
+        this.pendingVanish = [];
+        this.pendingKick = null;
         this.lastGateBlock = new Map();
         this.glassHintShown = false;
 
         Matter.Events.on(engine, 'collisionStart', (event) => this.handleCollisionStart(event.pairs));
     }
 
-    setLevel({ ball, surfaces = [], gates = [], fans = [], trueElasticity = false }) {
+    setLevel({ ball, surfaces = [], gates = [], fans = [], bumpers = [], portals = [], trueElasticity = false }) {
         this.ball = ball;
         this.trueElasticity = trueElasticity;
         this.fans = fans;
+        this.bumperByBody = new Map(bumpers.map(b => [b.body, b]));
+        this.portals = portals;
+        this.pendingVanish = [];
+        this.pendingKick = null;
         this.surfaceByBody = new Map(surfaces.map(s => [s.body, s]));
         this.gateByBody = new Map(gates.map(g => [g.body, g]));
         this.pendingShatter = [];
@@ -80,9 +93,48 @@ export class MechanicsSystem {
     }
 
     afterStep() {
-        if (this.pendingShatter.length === 0) return;
-        this.pendingShatter.forEach(surface => surface.shatter());
-        this.pendingShatter = [];
+        if (this.pendingShatter.length > 0) {
+            this.pendingShatter.forEach(surface => surface.shatter());
+            this.pendingShatter = [];
+        }
+        // The ball already bounced off the cloud during this step
+        if (this.pendingVanish.length > 0) {
+            this.pendingVanish.forEach(surface => surface.vanish());
+            this.pendingVanish = [];
+        }
+
+        const ball = this.ball;
+        if (!ball || !ball.isActive) return;
+
+        if (this.pendingKick) {
+            const v = bumperKick(this.pendingKick, ball.body.position);
+            Matter.Body.setVelocity(ball.body, v);
+            this.pendingKick = null;
+        }
+
+        const pos = ball.body.position;
+        for (const portal of this.portals) {
+            const from = portal.entering(pos.x, pos.y);
+            if (from < 0) continue;
+            const to = 1 - from;
+            const exit = portal.ends[to];
+            const v = { x: ball.body.velocity.x, y: ball.body.velocity.y };
+            Matter.Body.setPosition(ball.body, { x: exit.x, y: exit.y });
+            Matter.Body.setVelocity(ball.body, v);
+            portal.cooldownEnd = to;
+            portal.flash = 1;
+            ball.trailPoints = [];
+            this.emit('portal', { portal, x: exit.x, y: exit.y });
+            break;
+        }
+    }
+
+    /**
+     * A fresh ball: portals forget the last trip.
+     */
+    resetBall() {
+        this.pendingKick = null;
+        this.portals.forEach(p => p.reset());
     }
 
     handleCollisionStart(pairs) {
@@ -113,6 +165,15 @@ export class MechanicsSystem {
                 return;
             }
 
+            const bumper = this.bumperByBody.get(other);
+            if (bumper) {
+                pair.restitution = 0;
+                this.pendingKick = bumper;
+                bumper.hit();
+                this.emit('bumper', { bumper, ...pos });
+                return;
+            }
+
             const surface = this.surfaceByBody.get(other);
             if (!surface) {
                 // Walls and anything else behave like a plain surface
@@ -136,6 +197,13 @@ export class MechanicsSystem {
             }
 
             pair.restitution = contactRestitution(e, surface.material, this.trueElasticity);
+
+            if (vanishesAfterBounce(surface.material) && !surface.broken) {
+                if (!this.pendingVanish.includes(surface)) {
+                    this.pendingVanish.push(surface);
+                    this.emit('cloud', { surface, ...pos });
+                }
+            }
 
             const charge = getMaterial(surface.material).charge;
             if (charge !== 0) {

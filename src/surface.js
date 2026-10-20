@@ -83,6 +83,42 @@ export class Surface {
         }
     }
 
+    /**
+     * Cloud: puff away after one bounce.
+     */
+    vanish() {
+        if (this.broken) return;
+        this.broken = true;
+        Matter.World.remove(this.physicsWorld, this.body);
+
+        const { x1, y1, x2, y2 } = this.getEndpoints();
+        const count = Math.max(6, Math.round(this.width / 18));
+        for (let i = 0; i < count; i++) {
+            const t = (i + 0.5) / count;
+            this.shards.push({
+                x: x1 + (x2 - x1) * t,
+                y: y1 + (y2 - y1) * t,
+                vx: (Math.random() - 0.5) * 1.5,
+                vy: -0.5 - Math.random(),
+                rot: 0,
+                vr: 0,
+                size: 10 + Math.random() * 8,
+                life: 1,
+                puff: true
+            });
+        }
+    }
+
+    /**
+     * Bring back a cloud (a fresh ball gets fresh clouds).
+     */
+    restore() {
+        if (!this.broken || this.material !== 'cloud') return;
+        this.broken = false;
+        this.shards = [];
+        this.createPhysicsBody();
+    }
+
     bounceFeedback() {
         if (this.material === 'trampoline' || this.material === 'sponge') {
             this.squash = 1;
@@ -96,6 +132,14 @@ export class Surface {
         if (this.shards.length > 0) {
             const k = deltaTime / 16.67;
             this.shards = this.shards.filter(s => {
+                if (s.puff) {
+                    // Puffs drift up and grow
+                    s.x += s.vx * k;
+                    s.y += s.vy * k;
+                    s.size += 0.4 * k;
+                    s.life -= deltaTime / 700;
+                    return s.life > 0;
+                }
                 s.vy += 0.25 * k;
                 s.x += s.vx * k;
                 s.y += s.vy * k;
@@ -336,6 +380,21 @@ export class Surface {
                 ctx.arc(x, (i % 2 === 0 ? -3 : 3) * squish, 2.5, 0, Math.PI * 2);
                 ctx.fill();
             }
+        } else if (this.material === 'cloud') {
+            // Fluffy row of circles
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+            const bumps = Math.max(3, Math.round(len / 22));
+            for (let i = 0; i < bumps; i++) {
+                const x = -len / 2 + (i + 0.5) * (len / bumps);
+                const r = t * (0.55 + (i % 2) * 0.2);
+                ctx.beginPath();
+                ctx.arc(x, (i % 2 === 0 ? 1 : -2), r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.fillStyle = 'rgba(200, 210, 255, 0.6)';
+            ctx.beginPath();
+            ctx.roundRect(-len / 2 + 4, 2, len - 8, t * 0.4, t * 0.2);
+            ctx.fill();
         } else if (this.material === 'glass') {
             ctx.fillStyle = 'rgba(190, 233, 255, 0.45)';
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
@@ -359,6 +418,16 @@ export class Surface {
 
     renderShards(ctx) {
         this.shards.forEach(s => {
+            if (s.puff) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, s.life) * 0.8;
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+                return;
+            }
             ctx.save();
             ctx.globalAlpha = Math.max(0, s.life);
             ctx.translate(s.x, s.y);

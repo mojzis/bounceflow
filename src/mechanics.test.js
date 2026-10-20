@@ -8,6 +8,8 @@ import {
     contactRestitution,
     gateIsOpen,
     breaksGlass,
+    bumperKick,
+    BUMPER_SPEED,
     LEGACY_RESTITUTION
 } from './mechanics.js';
 import { Ball } from './ball.js';
@@ -177,5 +179,57 @@ describe('MechanicsSystem in physics', () => {
         const heavy = run(dropRoom('heavy'), 40).path.at(-1).y;
         const normal = run(dropRoom(undefined), 40).path.at(-1).y;
         expect(heavy).toBeCloseTo(normal, 0);
+    });
+
+    it('bumper kicks the ball away at a fixed speed', () => {
+        // Ball falls onto the left side of the bumper and is sent up-left
+        const r = run(room({
+            ballStart: { x: 285, y: 100 },
+            bumpers: [{ x: 300, y: 400, radius: 30 }]
+        }), 80);
+        expect(r.events).toContain('bumper');
+        const hit = r.path.findIndex((p, i) => i > 0 && p.y < r.path[i - 1].y);
+        const after = r.path[hit + 1];
+        const before = r.path[hit];
+        expect(after.x).toBeLessThan(before.x);
+        const speed = Math.hypot(after.x - before.x, after.y - before.y);
+        expect(speed).toBeGreaterThan(BUMPER_SPEED * 0.9);
+    });
+
+    it('bumper kick points away from the center', () => {
+        const v = bumperKick({ x: 0, y: 0 }, { x: 3, y: -4 }, 10);
+        expect(v.x).toBeCloseTo(6);
+        expect(v.y).toBeCloseTo(-8);
+    });
+
+    it('cloud bounces the ball once, then is gone', () => {
+        const r = run(room({
+            ballElasticity: 0.8,
+            surfaces: [
+                { x: 300, y: 400, width: 300, angle: 0, locked: true, material: 'cloud' },
+                { x: 300, y: 600, width: 300, angle: 0, locked: true }
+            ]
+        }), 240);
+        expect(r.events.filter(e => e === 'cloud')).toHaveLength(1);
+        // It bounced up off the cloud...
+        const hit = r.path.findIndex((p, i) => i > 0 && p.y < r.path[i - 1].y);
+        expect(r.path[hit].y).toBeLessThan(400);
+        // ...and later fell through to the floor below
+        expect(Math.max(...r.path.map(p => p.y))).toBeGreaterThan(500);
+    });
+
+    it('portal moves the ball to the other end and keeps its speed', () => {
+        const r = run(room({
+            ballStart: { x: 200, y: 100 },
+            portals: [{ a: { x: 200, y: 300 }, b: { x: 600, y: 150 } }]
+        }), 60);
+        expect(r.events).toEqual(['portal']);
+        const jump = r.path.findIndex((p, i) => i > 0 && p.x - r.path[i - 1].x > 300);
+        expect(jump).toBeGreaterThan(0);
+        expect(r.path[jump].y).toBeLessThan(200);
+        // Still falling at the same speed right after the trip
+        const vBefore = r.path[jump - 1].y - r.path[jump - 2].y;
+        const vAfter = r.path[jump + 1].y - r.path[jump].y;
+        expect(vAfter).toBeCloseTo(vBefore, 0);
     });
 });

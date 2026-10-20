@@ -104,6 +104,7 @@ The game follows a **manager-based architecture** where the main Game class acts
 - Trampolines charge elasticity, sponges drain it, heavy balls smash glass
 - Color gates let matching balls pass (pair becomes a sensor)
 - Applies fan forces before each step and power star effects
+- Bumpers kick the ball away at a fixed speed, clouds vanish after one bounce, portals move the ball to their other end (all after each step)
 - No DOM access, so tests run the same rules (see `simulateLevel.js`)
 
 **`game/levelEntities.js`** - Builds ball/surfaces/targets/gates/fans from a level definition (shared by LevelManager and tests)
@@ -159,6 +160,12 @@ Previous implementation used scattered boolean flags that could get into invalid
 
 **`fan.js`** - Air zone that pushes the ball with a constant force (light balls fly, heavy balls barely move)
 
+**`bumper.js`** - Round pinball bumper (kicks the ball away from its center at `BUMPER_SPEED`)
+
+**`portal.js`** - Portal pair; the ball keeps its velocity, can't re-enter the end it came out of until it leaves it
+
+Clouds are a surface material (`material: 'cloud'`): one bounce, then they puff away. They come back when a new ball is released.
+
 **`bird.js`** - Flying obstacle
 - Moves across screen periodically
 - Collision with ball triggers level restart
@@ -173,7 +180,7 @@ Previous implementation used scattered boolean flags that could get into invalid
 - `WORLDS` holds the intro screen for each world; `getWorldStartingAt(id)`
 - `getLevel(id)` and `getTotalLevels()` helpers
 - 28 levels in 3 worlds: Bouncing (1-14), Elasticity (15-24), Materials & Mass (25-28)
-- World 1 brings in one toy every other level (3 trampoline, 5 heavy star + glass, 7 light star + fan, 9 bouncy star, 12 combo); World 3 adds sponges and gates and mixes everything
+- World 1 has a toy on every level after the first: new toys at 2 bumper, 3 trampoline, 4 cloud, 5 heavy star + glass, 6 portal, 7 light star + fan, 9 bouncy star; combos at 8, 10-14 (14 uses almost everything). World 3 adds sponges and gates and mixes everything
 
 **`mechanics.js`** - Toy rules as data + pure functions (materials, weights, star effects, gates, fan force)
 
@@ -298,6 +305,8 @@ src/
 ├── target.js                  # Star collection targets
 ├── gate.js                    # Color gate (cyan/red)
 ├── fan.js                     # Fan air zone
+├── bumper.js                  # Pinball bumper
+├── portal.js                  # Portal pair
 ├── bird.js                    # Flying obstacle
 ├── mechanics.js               # Toy rules (materials, weight, effects)
 ├── progress.js                # Saved level (localStorage)
@@ -330,10 +339,10 @@ npm run test:ui
 **Current coverage:**
 - `utils.test.js` - All utility functions (geometry, math, color)
 - `levels.test.js` - Level definition validation
-- `mechanics.test.js` - Toy rules and small physics scenarios (trampoline, sponge, glass, gates, fans)
-- `toys.test.js` - Every toy level (`trueElasticity`) has a known solution, and removing its key mechanic breaks it
+- `mechanics.test.js` - Toy rules and small physics scenarios (trampoline, sponge, glass, gates, fans, bumpers, clouds, portals)
+- `toys.test.js` - Every toy level (`trueElasticity`) has a known solution, its starting layout doesn't win, and removing its key mechanic breaks it
 
-When adding a toy level, add a solution to `toys.test.js`. A quick way to find one is a random search over the movable surfaces with `simulateLevel()`.
+When adding a toy level, add a solution to `toys.test.js`. A quick way to find one is a random search over the movable surfaces with `simulateLevel()`. The share of random setups that win is a good difficulty measure: World 1 toy levels sit around 0.3-1.5%, World 3 below 1%.
 
 **Test file location:** Place test files next to source files with `.test.js` suffix (e.g., `utils.test.js` next to `utils.js`)
 
