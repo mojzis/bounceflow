@@ -190,7 +190,11 @@ export class Game {
 
     moveSelectedSurface(dx, dy) {
         if (this.selectedSurfaceIndex >= 0 && this.selectedSurfaceIndex < this.surfaces.length) {
-            this.surfaces[this.selectedSurfaceIndex].move(dx, dy);
+            const surface = this.surfaces[this.selectedSurfaceIndex];
+            // Keep the surface center on the canvas
+            const x = Math.min(Math.max(surface.x + dx, 0), this.canvas.width);
+            const y = Math.min(Math.max(surface.y + dy, 0), this.canvas.height);
+            surface.move(x - surface.x, y - surface.y);
         }
     }
 

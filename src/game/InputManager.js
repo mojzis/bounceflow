@@ -17,6 +17,7 @@
  * - processHeldKeys(): Update movement/rotation from held keys with acceleration
  * - trackKeyDown(key, shiftKey): Start tracking a held key
  * - trackKeyUp(key): Stop tracking a held key
+ * - releaseAllKeys(): Forget all held keys
  *
  * Properties:
  * - mousePos: Current mouse position {x, y}
@@ -167,7 +168,18 @@ export class InputManager {
         }
     }
 
+    // Letter keys are stored lowercase: with Shift, 'd' goes down but comes up
+    // as 'D', which used to leave 'd' stuck as held forever.
+    normalizeKey(key) {
+        return key.length === 1 ? key.toLowerCase() : key;
+    }
+
+    isKeyHeld(key) {
+        return this.heldKeys.has(this.normalizeKey(key));
+    }
+
     trackKeyDown(key, shiftKey) {
+        key = this.normalizeKey(key);
         if (!this.heldKeys.has(key)) {
             this.heldKeys.add(key);
             this.keyHoldDuration.set(key, { startTime: Date.now(), shiftKey });
@@ -175,7 +187,14 @@ export class InputManager {
     }
 
     trackKeyUp(key) {
+        key = this.normalizeKey(key);
         this.heldKeys.delete(key);
         this.keyHoldDuration.delete(key);
+    }
+
+    // Forget all held keys (window lost focus, level changed)
+    releaseAllKeys() {
+        this.heldKeys.clear();
+        this.keyHoldDuration.clear();
     }
 }
