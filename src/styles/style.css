@@ -71,6 +71,38 @@ body {
     width: 50%;
 }
 
+.weight-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.weight-row .property-label {
+    margin-bottom: 0;
+}
+
+.weight-value {
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 10px;
+    background: #e0e0e0;
+    color: #333;
+    transition: background 0.2s;
+}
+
+.weight-value[data-weight="heavy"] {
+    background: #3A3A48;
+    color: white;
+}
+
+.weight-value[data-weight="light"] {
+    background: white;
+    color: #667eea;
+    box-shadow: inset 0 0 0 2px #667eea;
+}
+
 #controls {
     position: absolute;
     top: 120px;

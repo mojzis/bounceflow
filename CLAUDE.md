@@ -98,6 +98,18 @@ The game follows a **manager-based architecture** where the main Game class acts
 - Randomizes target positions (±30px)
 - Resets solver and replay state
 
+**`game/MechanicsSystem.js`** (~150 lines)
+- World 3 rules hooked into Matter.js `collisionStart`
+- Sets the bounce of every ball contact (materials, true elasticity)
+- Trampolines charge elasticity, sponges drain it, heavy balls smash glass
+- Color gates let matching balls pass (pair becomes a sensor)
+- Applies fan forces before each step and power star effects
+- No DOM access, so tests run the same rules (see `simulateLevel.js`)
+
+**`game/levelEntities.js`** - Builds ball/surfaces/targets/gates/fans from a level definition (shared by LevelManager and tests)
+
+**`game/simulateLevel.js`** - Headless level run with the real entities and mechanics; used by tests to prove levels are solvable
+
 **`game/StateController.js`** (~150 lines)
 - Manages game state transitions with automatic cleanup
 - Enforces cleanup before every state transition
@@ -143,6 +155,10 @@ Previous implementation used scattered boolean flags that could get into invalid
 - Pulse animation for uncollected targets
 - Particle burst celebration on collection
 
+**`gate.js`** - Color gate (cyan = only bouncy balls pass, red = only soft balls pass)
+
+**`fan.js`** - Air zone that pushes the ball with a constant force (light balls fly, heavy balls barely move)
+
 **`bird.js`** - Flying obstacle
 - Moves across screen periodically
 - Collision with ball triggers level restart
@@ -152,8 +168,14 @@ Previous implementation used scattered boolean flags that could get into invalid
 
 **`levels.js`** - Level definitions array
 - Each level specifies: ball start position, surface configurations, target positions, property pattern
+- Optional World 3 fields are documented at the top of the file (materials, star effects, gates, fans, `trueElasticity`, `steadyHook`, fixed targets)
+- `WORLDS` holds the intro screen for each world; `getWorldStartingAt(id)`
 - `getLevel(id)` and `getTotalLevels()` helpers
-- 15 levels with increasing complexity
+- 33 levels in 3 worlds: Bouncing (1-15), Elasticity (16-25), Materials & Mass (26-33)
+
+**`mechanics.js`** - World 3 rules as data + pure functions (materials, weights, star effects, gates, fan force)
+
+**`popups.js`** - Floating feedback text ("Boing!", "SMASH!")
 
 **`utils.js`** - Math and geometry utilities
 - Color interpolation (`lerpColor`)
@@ -168,6 +190,8 @@ Matter.js engine settings (in `PhysicsManager`):
 - Fixed timestep: 16.67ms (60Hz) to prevent tunneling
 - All physics bodies use low friction (0) and high restitution (0.95-0.99) for bouncy gameplay
 - Boundary walls positioned 25px outside canvas edges
+- Matter.js uses the **higher** restitution of two colliding bodies. In Worlds 1-2 surfaces are 0.99, so the ball's elasticity barely affects bounces. World 3 levels set `trueElasticity: true` and MechanicsSystem sets each contact's bounce so the ball's elasticity really counts.
+- **matter-js 0.20**: a body created with `isStatic: true` has no stored mass, so releasing it gives NaN positions. The ball is created dynamic and then made static.
 
 ### Key Systems
 
@@ -258,12 +282,19 @@ src/
 │   ├── RenderingSystem.js     # All rendering logic (~660 lines)
 │   ├── UIManager.js           # DOM elements and keyboard shortcuts (~145 lines)
 │   ├── LevelManager.js        # Level loading and progression (~170 lines)
-│   └── StateController.js     # State transitions, cleanup, recovery (~150 lines)
+│   ├── StateController.js     # State transitions, cleanup, recovery (~150 lines)
+│   ├── MechanicsSystem.js     # World 3 rules on the physics engine
+│   ├── levelEntities.js       # Builds level entities (game + tests)
+│   └── simulateLevel.js       # Headless level run for tests
 ├── ball.js                    # Ball entity with dynamic elasticity
 ├── surface.js                 # Interactive surface entity
 ├── target.js                  # Star collection targets
+├── gate.js                    # Color gate (cyan/red)
+├── fan.js                     # Fan air zone
 ├── bird.js                    # Flying obstacle
-├── levels.js                  # Level definitions array (15 levels)
+├── mechanics.js               # World 3 rules (materials, weight, effects)
+├── popups.js                  # Floating feedback text
+├── levels.js                  # Level definitions + world intros (33 levels)
 ├── utils.js                   # Math/geometry utilities
 └── styles/
     └── style.css              # UI styling
@@ -291,6 +322,10 @@ npm run test:ui
 **Current coverage:**
 - `utils.test.js` - All utility functions (geometry, math, color)
 - `levels.test.js` - Level definition validation
+- `mechanics.test.js` - World 3 rules and small physics scenarios (trampoline, sponge, glass, gates, fans)
+- `world3.test.js` - Every World 3 level has a known solution, and removing its key mechanic breaks it
+
+When adding a World 3 level, add a solution to `world3.test.js`. A quick way to find one is a random search over the movable surfaces with `simulateLevel()`.
 
 **Test file location:** Place test files next to source files with `.test.js` suffix (e.g., `utils.test.js` next to `utils.js`)
 
@@ -299,7 +334,7 @@ npm run test:ui
 ### Manual Testing
 
 Manual testing workflow for gameplay:
-1. Start dev server: `npm run dev`
+1. Start dev server: `npm run dev` (add `?level=26` to the URL to jump to a level)
 2. Test interactions in browser
 3. Verify solver works: Press `?` on any level
 4. Test replay: Complete level, verify replay button shows, click to watch replay with force vectors

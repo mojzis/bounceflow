@@ -24,6 +24,7 @@ import * as Matter from 'matter-js';
 export class PhysicsManager {
     constructor(canvas) {
         this.canvas = canvas;
+        this.wallRestitution = 0.99;
         this.setupPhysics();
         this.collisionCallbacks = [];
     }
@@ -44,7 +45,7 @@ export class PhysicsManager {
         this.world.gravity.scale = 0.001;
 
         // Create walls
-        const wallOptions = { isStatic: true, friction: 0, restitution: 0.99 };
+        const wallOptions = { isStatic: true, friction: 0, restitution: this.wallRestitution };
         this.walls = [
             Matter.Bodies.rectangle(this.canvas.width / 2, -25, this.canvas.width, 50, wallOptions), // Top
             Matter.Bodies.rectangle(this.canvas.width / 2, this.canvas.height + 25, this.canvas.width, 50, wallOptions), // Bottom
@@ -66,6 +67,14 @@ export class PhysicsManager {
         Matter.Engine.update(this.engine, fixedTimeStep);
     }
 
+    /**
+     * Levels with true elasticity use 0 so the ball's own bounce decides.
+     */
+    setWallRestitution(value) {
+        this.wallRestitution = value;
+        this.walls.forEach(wall => { wall.restitution = value; });
+    }
+
     onCollision(callback) {
         this.collisionCallbacks.push(callback);
     }
@@ -73,7 +82,7 @@ export class PhysicsManager {
     resize(width, height) {
         // Recreate walls with new dimensions
         Matter.World.remove(this.world, this.walls);
-        const wallOptions = { isStatic: true, friction: 0, restitution: 0.99 };
+        const wallOptions = { isStatic: true, friction: 0, restitution: this.wallRestitution };
         this.walls = [
             Matter.Bodies.rectangle(width / 2, -25, width, 50, wallOptions),
             Matter.Bodies.rectangle(width / 2, height + 25, width, 50, wallOptions),

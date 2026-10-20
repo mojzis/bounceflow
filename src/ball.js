@@ -3,22 +3,25 @@
  */
 
 import * as Matter from 'matter-js';
-import { lerpColor, clamp } from './utils.js';
+import { lerpColor } from './utils.js';
+import { WEIGHTS, clampElasticity } from './mechanics.js';
 
 export class Ball {
     constructor(x, y, radius = 20, physicsWorld) {
         this.radius = radius;
         this.physicsWorld = physicsWorld;
 
-        // Create physics body (start as static - frozen until released)
+        // Create physics body, then freeze it until released.
+        // Created dynamic first so Matter.js stores its real mass; a body
+        // created with isStatic: true has no mass to restore on release.
         this.body = Matter.Bodies.circle(x, y, radius, {
             restitution: 0.95,
             friction: 0,
             frictionAir: 0,
             density: 0.001,
-            isStatic: true, // Start frozen
             label: 'ball'
         });
+        Matter.Body.setStatic(this.body, true);
 
         Matter.World.add(physicsWorld, this.body);
 
@@ -28,6 +31,8 @@ export class Ball {
         this.elasticityPhase = 0;
         this.cycleSpeed = 0.001; // Radians per frame
         this.propertyPattern = 'static'; // 'static', 'wave', 'pulse'
+        this.elasticityShift = 0; // Added by trampolines, sponges, stars
+        this.weight = 'normal'; // 'normal', 'heavy', 'light'
 
         // Visual properties
         this.color = '#FF6B6B';
@@ -43,20 +48,65 @@ export class Ball {
         this.cycleSpeed = cycleSpeed;
     }
 
+    setBaseElasticity(value) {
+        this.baseElasticity = value;
+        this.currentElasticity = value;
+        this.updateColor();
+    }
+
+    /**
+     * Change elasticity on top of the time-based pattern (e.g. trampoline hit).
+     */
+    adjustElasticity(delta) {
+        // Keep the shift within what the pattern can actually reach
+        const pattern = this.getPatternElasticity();
+        this.currentElasticity = clampElasticity(pattern + this.elasticityShift + delta);
+        this.elasticityShift = this.currentElasticity - pattern;
+        Matter.Body.set(this.body, 'restitution', this.currentElasticity);
+        this.updateColor();
+    }
+
+    setWeight(weight) {
+        this.weight = WEIGHTS[weight] ? weight : 'normal';
+        // Static bodies have infinite mass; weight is applied on activate()
+        if (!this.body.isStatic) this.applyWeight();
+    }
+
+    applyWeight() {
+        const w = WEIGHTS[this.weight];
+        Matter.Body.setDensity(this.body, w.density);
+        this.body.frictionAir = w.frictionAir;
+    }
+
+    getPatternElasticity() {
+        if (this.propertyPattern === 'wave') {
+            // Sine wave: oscillates between 0.2 and 0.8
+            return 0.5 + Math.sin(this.elasticityPhase) * 0.3;
+        } else if (this.propertyPattern === 'pulse') {
+            // Pulse pattern: sudden spikes
+            const pulseValue = Math.max(0, Math.sin(this.elasticityPhase));
+            return 0.3 + pulseValue * 0.5;
+        }
+        return this.baseElasticity;
+    }
+
     activate() {
         this.isActive = true;
         // Make ball dynamic (unfreeze it)
         Matter.Body.setStatic(this.body, false);
+        this.applyWeight();
     }
 
     reset(x, y) {
         // Freeze ball again
+        this.weight = 'normal';
         Matter.Body.setStatic(this.body, true);
         Matter.Body.setPosition(this.body, { x, y });
         Matter.Body.setVelocity(this.body, { x: 0, y: 0 });
         Matter.Body.setAngularVelocity(this.body, 0);
         this.isActive = false;
         this.elasticityPhase = 0;
+        this.elasticityShift = 0;
         this.currentElasticity = this.baseElasticity;
         this.trailPoints = [];
         this.updateColor();
@@ -68,21 +118,11 @@ export class Ball {
         // Ball corruption is detected one level up in Game.update(), which
         // routes through stateController.recover() — see src/game/index.js.
 
-        // Update property based on pattern
-        if (this.propertyPattern === 'wave') {
+        // Update property based on pattern ('static' doesn't change)
+        if (this.propertyPattern !== 'static') {
             this.elasticityPhase += this.cycleSpeed * deltaTime;
-            // Sine wave: oscillates between 0.2 and 0.8
-            this.currentElasticity = 0.5 + Math.sin(this.elasticityPhase) * 0.3;
-        } else if (this.propertyPattern === 'pulse') {
-            this.elasticityPhase += this.cycleSpeed * deltaTime;
-            // Pulse pattern: sudden spikes
-            const pulseValue = Math.max(0, Math.sin(this.elasticityPhase));
-            this.currentElasticity = 0.3 + pulseValue * 0.5;
         }
-        // 'static' pattern doesn't change
-
-        // Clamp elasticity
-        this.currentElasticity = clamp(this.currentElasticity, 0.2, 1.0);
+        this.currentElasticity = clampElasticity(this.getPatternElasticity() + this.elasticityShift);
 
         // Update physics body
         Matter.Body.set(this.body, 'restitution', this.currentElasticity);
@@ -123,6 +163,34 @@ export class Ball {
         // Limit trail length
         if (this.trailPoints.length > this.maxTrailLength) {
             this.trailPoints.shift();
+        }
+    }
+
+    renderWeight(ctx, pos) {
+        if (this.weight === 'heavy') {
+            // Thick metal rim with bolts
+            ctx.strokeStyle = '#3A3A48';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, this.radius - 2, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = '#3A3A48';
+            for (let i = 0; i < 4; i++) {
+                const a = this.body.angle + i * Math.PI / 2 + Math.PI / 4;
+                ctx.beginPath();
+                ctx.arc(pos.x + Math.cos(a) * this.radius * 0.55, pos.y + Math.sin(a) * this.radius * 0.55, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else if (this.weight === 'light') {
+            // Airy dashed halo
+            ctx.save();
+            ctx.setLineDash([4, 5]);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, this.radius + 6, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
         }
     }
 
@@ -176,6 +244,8 @@ export class Ball {
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 2;
         ctx.stroke();
+
+        this.renderWeight(ctx, pos);
 
         // Draw simple eyes for character
         if (!this.isActive) {

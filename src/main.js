@@ -3,6 +3,13 @@
  */
 
 import { Game } from './game/index.js';
+import { getTotalLevels } from './levels.js';
+
+// Optional ?level=N in the URL jumps straight to a level
+function getStartLevel() {
+    const n = parseInt(new URLSearchParams(window.location.search).get('level'), 10);
+    return Number.isInteger(n) && n >= 1 && n <= getTotalLevels() ? n : 1;
+}
 
 // Initialize the game when DOM is loaded
 function init() {
@@ -26,7 +33,7 @@ function init() {
     window.addEventListener('resize', resizeCanvas);
 
     // Create game instance
-    game = new Game(canvas);
+    game = new Game(canvas, getStartLevel());
 
     // Setup input handlers
     canvas.addEventListener('mousedown', (e) => game.handleMouseDown(e));

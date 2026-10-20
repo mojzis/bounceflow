@@ -4,9 +4,10 @@
 
 import * as Matter from 'matter-js';
 import { pointNearLine, degToRad, radToDeg } from './utils.js';
+import { getMaterial, LEGACY_RESTITUTION } from './mechanics.js';
 
 export class Surface {
-    constructor(x, y, width, angle = 0, locked = false, physicsWorld) {
+    constructor(x, y, width, angle = 0, locked = false, physicsWorld, material = 'normal') {
         this.x = x;
         this.y = y;
         this.width = width;
@@ -14,6 +15,10 @@ export class Surface {
         this.locked = locked;
         this.physicsWorld = physicsWorld;
         this.thickness = 20; // Thicker for better collision detection
+        this.material = material;
+        this.broken = false; // Glass only
+        this.shards = [];
+        this.squash = 0; // Trampoline wobble after a hit (0..1)
 
         // Interaction state
         this.isDragging = false;
@@ -43,7 +48,9 @@ export class Surface {
                 isStatic: true,
                 angle: degToRad(this.angle),
                 friction: 0,
-                restitution: 0.99,
+                // The real bounce is set per contact by MechanicsSystem;
+                // keep legacy value for plain surfaces so older levels are unchanged
+                restitution: getMaterial(this.material).restitution ?? LEGACY_RESTITUTION,
                 label: 'surface'
             }
         );
@@ -51,8 +58,56 @@ export class Surface {
         Matter.World.add(this.physicsWorld, this.body);
     }
 
+    /**
+     * Break glass: remove the physics body and spawn shards.
+     */
+    shatter() {
+        if (this.broken) return;
+        this.broken = true;
+        Matter.World.remove(this.physicsWorld, this.body);
+
+        const { x1, y1, x2, y2 } = this.getEndpoints();
+        const count = Math.max(8, Math.round(this.width / 12));
+        for (let i = 0; i < count; i++) {
+            const t = Math.random();
+            this.shards.push({
+                x: x1 + (x2 - x1) * t,
+                y: y1 + (y2 - y1) * t,
+                vx: (Math.random() - 0.5) * 4,
+                vy: Math.random() * 2 - 1,
+                rot: Math.random() * Math.PI,
+                vr: (Math.random() - 0.5) * 0.3,
+                size: 4 + Math.random() * 6,
+                life: 1
+            });
+        }
+    }
+
+    bounceFeedback() {
+        if (this.material === 'trampoline' || this.material === 'sponge') {
+            this.squash = 1;
+        }
+    }
+
+    update(deltaTime) {
+        if (this.squash > 0) {
+            this.squash = Math.max(0, this.squash - deltaTime / 300);
+        }
+        if (this.shards.length > 0) {
+            const k = deltaTime / 16.67;
+            this.shards = this.shards.filter(s => {
+                s.vy += 0.25 * k;
+                s.x += s.vx * k;
+                s.y += s.vy * k;
+                s.rot += s.vr * k;
+                s.life -= deltaTime / 1500;
+                return s.life > 0;
+            });
+        }
+    }
+
     handleMouseDown(mx, my, isRightClick = false) {
-        if (this.locked) return false;
+        if (this.locked || this.broken) return false;
 
         const hitThreshold = 15;
         const endpoints = this.getEndpoints();
@@ -72,7 +127,7 @@ export class Surface {
     }
 
     handleMouseMove(mx, my) {
-        if (this.locked) return;
+        if (this.locked || this.broken) return;
 
         if (this.isDragging) {
             this.x = mx - this.dragOffset.x;
@@ -110,6 +165,7 @@ export class Surface {
     }
 
     updatePhysicsBody() {
+        if (this.broken) return;
         Matter.Body.setPosition(this.body, { x: this.x, y: this.y });
         Matter.Body.setAngle(this.body, degToRad(this.angle));
     }
@@ -142,7 +198,17 @@ export class Surface {
     render(ctx, showAngle = false) {
         const endpoints = this.getEndpoints();
 
+        if (this.broken) {
+            this.renderShards(ctx);
+            return;
+        }
+
         ctx.save();
+
+        // Material base layer, drawn under the normal interaction styling
+        if (this.material !== 'normal') {
+            this.renderMaterial(ctx, endpoints);
+        }
 
         // Draw surface line
         ctx.beginPath();
@@ -167,7 +233,16 @@ export class Surface {
         }
 
         ctx.lineCap = 'round';
-        ctx.stroke();
+        // Material surfaces show their own color; only draw the outline-style
+        // highlight when interacting with them
+        const interacting = this.isDragging || this.isRotating || this.selected || this.hovered;
+        if (this.material === 'normal' || (interacting && !this.locked)) {
+            if (this.material !== 'normal') {
+                ctx.globalAlpha = 0.45;
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+        }
 
         // Draw control handles if not locked
         if (!this.locked) {
@@ -205,5 +280,95 @@ export class Surface {
         }
 
         ctx.restore();
+    }
+
+    renderMaterial(ctx, endpoints) {
+        const { x1, y1, x2, y2 } = endpoints;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const len = this.width;
+        const t = this.thickness;
+        const mat = getMaterial(this.material);
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(angle);
+
+        if (this.material === 'trampoline') {
+            // Legs + springy mat that dips after a hit
+            const dip = Math.sin(this.squash * Math.PI) * 8;
+            ctx.strokeStyle = '#2D2D2D';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-len / 2 + 6, 0); ctx.lineTo(-len / 2 + 14, t);
+            ctx.moveTo(len / 2 - 6, 0); ctx.lineTo(len / 2 - 14, t);
+            ctx.stroke();
+            ctx.strokeStyle = mat.color;
+            ctx.lineWidth = t * 0.6;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-len / 2, 0);
+            ctx.quadraticCurveTo(0, dip * 2, len / 2, 0);
+            ctx.stroke();
+            // Zigzag spring hint
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let x = -len / 2 + 10, i = 0; x <= len / 2 - 10; x += 10, i++) {
+                const y = (i % 2 === 0 ? -3 : 3) + dip * (1 - (2 * x / len) ** 2);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        } else if (this.material === 'sponge') {
+            const squish = 1 - this.squash * 0.35;
+            ctx.fillStyle = mat.color;
+            ctx.beginPath();
+            ctx.roundRect(-len / 2, -t / 2 * squish, len, t * squish, t / 2);
+            ctx.fill();
+            // Sponge holes
+            ctx.fillStyle = 'rgba(150, 60, 30, 0.45)';
+            for (let x = -len / 2 + 8, i = 0; x < len / 2 - 4; x += 13, i++) {
+                ctx.beginPath();
+                ctx.arc(x, (i % 2 === 0 ? -3 : 3) * squish, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else if (this.material === 'glass') {
+            ctx.fillStyle = 'rgba(190, 233, 255, 0.45)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.rect(-len / 2, -t / 2, len, t);
+            ctx.fill();
+            ctx.stroke();
+            // Shine streaks
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.beginPath();
+            for (let x = -len / 2 + 15; x < len / 2 - 10; x += 40) {
+                ctx.moveTo(x, t / 2 - 3);
+                ctx.lineTo(x + 8, -t / 2 + 3);
+            }
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    renderShards(ctx) {
+        this.shards.forEach(s => {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, s.life);
+            ctx.translate(s.x, s.y);
+            ctx.rotate(s.rot);
+            ctx.fillStyle = 'rgba(190, 233, 255, 0.85)';
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, -s.size / 2);
+            ctx.lineTo(s.size / 2, s.size / 2);
+            ctx.lineTo(-s.size / 2, s.size / 3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        });
     }
 }

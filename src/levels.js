@@ -1,5 +1,15 @@
 /**
  * Level definitions for BounceFlow prototype
+ *
+ * Optional World 3 fields (see mechanics.js):
+ * - surfaces[].material: 'normal' | 'trampoline' | 'sponge' | 'glass'
+ * - targets[].effect: 'bouncy' | 'soft' | 'heavy' | 'light' (power star)
+ * - targets[].fixed: true to skip position randomization (stars in boxes)
+ * - gates: [{ x, y, width, angle, type: 'cyan' | 'red' }]
+ * - fans: [{ x, y, width, height, dir: 'up'|'down'|'left'|'right', strength }]
+ * - trueElasticity: bounce uses the ball's real elasticity
+ * - ballElasticity: starting elasticity for static levels
+ * - steadyHook: the hook doesn't sway before release
  */
 
 export const LEVELS = [
@@ -452,8 +462,226 @@ export const LEVELS = [
         propertyPattern: 'wave',
         cycleSpeed: 0.0016,
         hint: "The ultimate elasticity challenge - use everything you've learned!"
+    },
+    // WORLD 3: MATERIALS & MASS - Levels 26-33
+    {
+        id: 26,
+        name: "Boing!",
+        ballStart: { x: 150, y: 100 },
+        surfaces: [
+            { x: 250, y: 400, width: 180, angle: 25, locked: false },
+            { x: 520, y: 480, width: 220, angle: 8, locked: true, material: 'trampoline' }
+        ],
+        targets: [
+            { x: 680, y: 300 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        trueElasticity: true,
+        ballElasticity: 0.6,
+        steadyHook: true,
+        hint: "The blue trampoline is extra springy - bounce the ball onto it to reach the star!"
+    },
+    {
+        id: 27,
+        name: "Squish",
+        ballStart: { x: 150, y: 80 },
+        surfaces: [
+            { x: 200, y: 250, width: 160, angle: 30, locked: true, material: 'sponge' },
+            { x: 400, y: 430, width: 180, angle: -20, locked: false },
+            { x: 570, y: 420, width: 120, angle: 90, locked: true },
+            { x: 730, y: 420, width: 120, angle: 90, locked: true },
+            { x: 650, y: 490, width: 180, angle: 0, locked: true }
+        ],
+        gates: [
+            { x: 650, y: 360, width: 150, angle: 0, type: 'red' }
+        ],
+        targets: [
+            { x: 650, y: 430, fixed: true }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        trueElasticity: true,
+        ballElasticity: 0.7,
+        steadyHook: true,
+        hint: "Red gates only open for soft balls. Squish the ball on the sponge first!"
+    },
+    {
+        id: 28,
+        name: "Charge Up",
+        ballStart: { x: 120, y: 100 },
+        surfaces: [
+            { x: 160, y: 430, width: 160, angle: 15, locked: true, material: 'trampoline' },
+            { x: 420, y: 450, width: 160, angle: -15, locked: false, material: 'trampoline' },
+            { x: 600, y: 300, width: 140, angle: 30, locked: false },
+            { x: 770, y: 125, width: 150, angle: 0, locked: true },
+            { x: 770, y: 275, width: 150, angle: 0, locked: true },
+            { x: 845, y: 200, width: 150, angle: 90, locked: true }
+        ],
+        gates: [
+            { x: 700, y: 200, width: 140, angle: 90, type: 'cyan' }
+        ],
+        targets: [
+            { x: 760, y: 200, fixed: true }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        trueElasticity: true,
+        ballElasticity: 0.45,
+        steadyHook: true,
+        hint: "Cyan gates only open for bouncy balls. Each trampoline bounce charges the ball up!"
+    },
+    {
+        id: 29,
+        name: "Power Star",
+        ballStart: { x: 150, y: 100 },
+        surfaces: [
+            { x: 250, y: 440, width: 180, angle: 20, locked: false }
+        ],
+        targets: [
+            { x: 150, y: 250, effect: 'bouncy' },
+            { x: 450, y: 300 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        trueElasticity: true,
+        ballElasticity: 0.5,
+        steadyHook: true,
+        hint: "Stars with a ring change the ball. Grab the bouncy star, then bounce up high!"
+    },
+    {
+        id: 30,
+        name: "Heavy Metal",
+        ballStart: { x: 150, y: 100 },
+        surfaces: [
+            { x: 220, y: 380, width: 180, angle: 20, locked: false },
+            { x: 500, y: 400, width: 170, angle: 0, locked: true, material: 'glass' },
+            { x: 420, y: 465, width: 120, angle: 90, locked: true },
+            { x: 580, y: 465, width: 120, angle: 90, locked: true },
+            { x: 500, y: 530, width: 180, angle: 0, locked: true }
+        ],
+        targets: [
+            { x: 150, y: 250, effect: 'heavy' },
+            { x: 500, y: 470, fixed: true }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        trueElasticity: true,
+        ballElasticity: 0.8,
+        steadyHook: true,
+        hint: "Glass only breaks under a heavy ball. Get heavy first, then smash through!"
+    },
+    {
+        id: 31,
+        name: "Feather Float",
+        ballStart: { x: 150, y: 100 },
+        surfaces: [
+            { x: 300, y: 420, width: 180, angle: 20, locked: false }
+        ],
+        fans: [
+            { x: 450, y: 340, width: 240, height: 440, dir: 'up', strength: 1.3 }
+        ],
+        targets: [
+            { x: 150, y: 260, effect: 'light' },
+            { x: 470, y: 140 }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        trueElasticity: true,
+        ballElasticity: 0.6,
+        steadyHook: true,
+        hint: "Fans blow light things away. Become light as a feather and ride the wind up!"
+    },
+    {
+        id: 32,
+        name: "Against the Wind",
+        ballStart: { x: 150, y: 80 },
+        surfaces: [
+            { x: 250, y: 400, width: 180, angle: 25, locked: false },
+            { x: 560, y: 515, width: 140, angle: 0, locked: true },
+            { x: 480, y: 480, width: 70, angle: 90, locked: true },
+            { x: 640, y: 480, width: 70, angle: 90, locked: true }
+        ],
+        fans: [
+            { x: 560, y: 320, width: 420, height: 240, dir: 'left', strength: 1.5 }
+        ],
+        targets: [
+            { x: 150, y: 230, effect: 'heavy' },
+            { x: 560, y: 470, fixed: true }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        trueElasticity: true,
+        ballElasticity: 0.7,
+        steadyHook: true,
+        hint: "The wind pushes the ball back. A heavy ball can punch right through it!"
+    },
+    {
+        id: 33,
+        name: "Materials Mastery",
+        ballStart: { x: 120, y: 80 },
+        surfaces: [
+            { x: 180, y: 450, width: 170, angle: -10, locked: false, material: 'trampoline' },
+            { x: 520, y: 380, width: 150, angle: 20, locked: false },
+            { x: 400, y: 720, width: 440, angle: 90, locked: true },
+            { x: 680, y: 420, width: 150, angle: 0, locked: true, material: 'glass' },
+            { x: 600, y: 485, width: 120, angle: 90, locked: true },
+            { x: 760, y: 485, width: 120, angle: 90, locked: true },
+            { x: 680, y: 550, width: 180, angle: 0, locked: true }
+        ],
+        gates: [
+            { x: 400, y: 250, width: 500, angle: 90, type: 'cyan' }
+        ],
+        targets: [
+            { x: 520, y: 200, effect: 'heavy' },
+            { x: 680, y: 490, fixed: true }
+        ],
+        propertyPattern: 'static',
+        cycleSpeed: 0,
+        trueElasticity: true,
+        ballElasticity: 0.6,
+        steadyHook: true,
+        hint: "Charge up, pass the gate, get heavy, smash the glass. Use everything you know!"
     }
 ];
+
+/**
+ * Worlds and the intro screen shown before their first level.
+ * World 1 starts the game, so it has no intro screen.
+ */
+export const WORLDS = [
+    {
+        id: 2,
+        startLevel: 16,
+        title: 'ELASTICITY',
+        subtitle: 'When Bouncy Becomes a Variable',
+        description: "The ball's bounce changes with time. Watch the colors, feel the rhythm, master the timing!",
+        mechanics: [
+            { name: 'Wave Pattern', text: 'Smooth oscillation between low and high elasticity' },
+            { name: 'Pulse Pattern', text: 'Sudden spikes of super bounciness' }
+        ]
+    },
+    {
+        id: 3,
+        startLevel: 26,
+        title: 'MATERIALS & MASS',
+        subtitle: 'Everything Changes the Ball',
+        description: 'Now the bounce is real: soft balls barely bounce, bouncy balls fly. What the ball touches changes it!',
+        mechanics: [
+            { name: 'Trampolines & Sponges', text: 'Trampolines charge the ball up, sponges soak up its bounce' },
+            { name: 'Color Gates', text: 'Cyan gates let bouncy balls through, red gates let soft balls through' },
+            { name: 'Power Stars', text: 'Stars with a ring make the ball bouncy, soft, heavy or light' },
+            { name: 'Glass & Fans', text: 'Heavy balls smash glass; fans blow light balls around' }
+        ]
+    }
+];
+
+/**
+ * World whose first level is levelId, or null.
+ */
+export function getWorldStartingAt(levelId) {
+    return WORLDS.find(w => w.startLevel === levelId) || null;
+}
 
 /**
  * Get level by ID
