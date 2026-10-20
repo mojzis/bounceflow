@@ -56,6 +56,7 @@ export class RenderingSystem {
 
         // Fans sit behind everything
         this.game.fans.forEach(fan => fan.render(this.ctx));
+        this.game.portals.forEach(portal => portal.render(this.ctx));
 
         // Render surfaces (show angles in replay mode or if toggled on)
         const isReplay = this.game.currentState === 'REPLAY';
@@ -63,6 +64,7 @@ export class RenderingSystem {
         const displayAngles = isReplay || this.game.showAngles || this.game.showHints;
         this.game.surfaces.forEach(surface => surface.render(this.ctx, displayAngles));
         this.game.gates.forEach(gate => gate.render(this.ctx));
+        this.game.bumpers.forEach(bumper => bumper.render(this.ctx));
 
         // Render targets
         this.game.targets.forEach(target => target.render(this.ctx));

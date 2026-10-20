@@ -104,6 +104,7 @@ The game follows a **manager-based architecture** where the main Game class acts
 - Trampolines charge elasticity, sponges drain it, heavy balls smash glass
 - Color gates let matching balls pass (pair becomes a sensor)
 - Applies fan forces before each step and power star effects
+- Bumpers kick the ball away at a fixed speed, clouds vanish after one bounce, portals move the ball to their other end (all after each step)
 - No DOM access, so tests run the same rules (see `simulateLevel.js`)
 
 **`game/levelEntities.js`** - Builds ball/surfaces/targets/gates/fans from a level definition (shared by LevelManager and tests)
@@ -158,6 +159,12 @@ Previous implementation used scattered boolean flags that could get into invalid
 **`gate.js`** - Color gate (cyan = only bouncy balls pass, red = only soft balls pass)
 
 **`fan.js`** - Air zone that pushes the ball with a constant force (light balls fly, heavy balls barely move)
+
+**`bumper.js`** - Round pinball bumper (kicks the ball away from its center at `BUMPER_SPEED`)
+
+**`portal.js`** - Portal pair; the ball keeps its velocity, can't re-enter the end it came out of until it leaves it
+
+Clouds are a surface material (`material: 'cloud'`): one bounce, then they puff away. They come back when a new ball is released.
 
 **`bird.js`** - Flying obstacle
 - Moves across screen periodically
@@ -298,6 +305,8 @@ src/
 ├── target.js                  # Star collection targets
 ├── gate.js                    # Color gate (cyan/red)
 ├── fan.js                     # Fan air zone
+├── bumper.js                  # Pinball bumper
+├── portal.js                  # Portal pair
 ├── bird.js                    # Flying obstacle
 ├── mechanics.js               # Toy rules (materials, weight, effects)
 ├── progress.js                # Saved level (localStorage)
@@ -330,8 +339,8 @@ npm run test:ui
 **Current coverage:**
 - `utils.test.js` - All utility functions (geometry, math, color)
 - `levels.test.js` - Level definition validation
-- `mechanics.test.js` - Toy rules and small physics scenarios (trampoline, sponge, glass, gates, fans)
-- `toys.test.js` - Every toy level (`trueElasticity`) has a known solution, and removing its key mechanic breaks it
+- `mechanics.test.js` - Toy rules and small physics scenarios (trampoline, sponge, glass, gates, fans, bumpers, clouds, portals)
+- `toys.test.js` - Every toy level (`trueElasticity`) has a known solution, its starting layout doesn't win, and removing its key mechanic breaks it
 
 When adding a toy level, add a solution to `toys.test.js`. A quick way to find one is a random search over the movable surfaces with `simulateLevel()`.
 

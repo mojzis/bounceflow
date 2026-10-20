@@ -116,6 +116,8 @@ export class Game {
         this.targets = [];
         this.gates = [];
         this.fans = [];
+        this.bumpers = [];
+        this.portals = [];
         this.selectedSurfaceIndex = -1; // For keyboard control
 
         // Input handling
@@ -242,6 +244,15 @@ export class Game {
             case 'smash':
                 this.popups.add(x, y - 30, 'SMASH!', '#FFFFFF', 30);
                 break;
+            case 'bumper':
+                this.popups.add(x, y - 30, 'Bonk!', '#FF6BB5');
+                break;
+            case 'cloud':
+                this.popups.add(x, y - 30, 'Poof!', '#FFFFFF');
+                break;
+            case 'portal':
+                this.popups.add(x, y - 40, 'Whoosh!', '#54A0FF');
+                break;
             case 'glassClink':
                 this.popups.add(x, y - 30, 'Clink! Too light to break', '#BEE9FF', 18);
                 break;
@@ -367,6 +378,8 @@ export class Game {
             setTimeout(() => {
                 try {
                     this.ball.activate();
+                    this.mechanics.resetBall();
+                    this.surfaces.forEach(surface => surface.restore());
 
                     // Transfer swing momentum to ball
                     Matter.Body.setVelocity(this.ball.body, {
@@ -405,7 +418,11 @@ export class Game {
         const level = getLevel(this.currentLevel);
         this.ball.reset(level.ballStart.x, level.ballStart.y);
         this.ball.activate();
+        this.mechanics.resetBall();
         this.attempts++;
+
+        // A fresh ball gets fresh clouds
+        this.surfaces.forEach(surface => surface.restore());
 
         // The fresh ball lost its power star effects, so bring those stars back
         this.targets.forEach(target => {
@@ -618,6 +635,8 @@ export class Game {
             this.surfaces.forEach(surface => surface.update(deltaTime));
             this.gates.forEach(gate => gate.update(deltaTime, this.ball));
             this.fans.forEach(fan => fan.update(deltaTime));
+            this.bumpers.forEach(bumper => bumper.update(deltaTime));
+            this.portals.forEach(portal => portal.update(deltaTime));
             this.popups.update(deltaTime);
 
             this.surfaces.forEach(surface => {

@@ -2,11 +2,13 @@
  * Level definitions for BounceFlow prototype
  *
  * Optional toy fields (see mechanics.js), used from World 1 on:
- * - surfaces[].material: 'normal' | 'trampoline' | 'sponge' | 'glass'
+ * - surfaces[].material: 'normal' | 'trampoline' | 'sponge' | 'glass' | 'cloud'
  * - targets[].effect: 'bouncy' | 'soft' | 'heavy' | 'light' (power star)
  * - targets[].fixed: true to skip position randomization (stars in boxes)
  * - gates: [{ x, y, width, angle, type: 'cyan' | 'red' }]
  * - fans: [{ x, y, width, height, dir: 'up'|'down'|'left'|'right', strength }]
+ * - bumpers: [{ x, y, radius }] (kick the ball away at a fixed speed)
+ * - portals: [{ a: { x, y }, b: { x, y } }] (in one end, out the other)
  * - trueElasticity: bounce uses the ball's real elasticity
  * - ballElasticity: starting elasticity for static levels
  * - steadyHook: the hook doesn't sway before release (World 2+; World 1 never sways)

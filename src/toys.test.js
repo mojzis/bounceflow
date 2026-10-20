@@ -46,8 +46,11 @@ function withoutMechanic(level, kind) {
     const copy = structuredClone(level);
     if (kind === 'materials') {
         copy.surfaces.forEach(s => { if (s.material !== 'glass') delete s.material; });
-    } else {
+    } else if (kind === 'effects') {
         copy.targets.forEach(t => delete t.effect);
+    } else {
+        // 'bumpers', 'portals', 'fans', 'gates': take them away
+        delete copy[kind];
     }
     return copy;
 }
@@ -75,6 +78,12 @@ describe('Toy levels', () => {
             HEIGHTS.forEach(height => {
                 const result = simulateLevel(level, { surfaces: overrides, height });
                 expect(result.success, `height ${height}`).toBe(true);
+            });
+        });
+
+        it(`level ${level.id} (${level.name}) isn't won by its starting layout`, () => {
+            HEIGHTS.forEach(height => {
+                expect(simulateLevel(level, { height }).success, `height ${height}`).toBe(false);
             });
         });
 
