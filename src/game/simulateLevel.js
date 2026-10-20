@@ -21,7 +21,7 @@ const FRAME_MS = 1000 / 60;
  * @param {number} [options.width] - canvas width
  * @param {number} [options.height] - canvas height
  * @param {number} [options.maxFrames] - frames before giving up
- * @returns {{ success: boolean, collected: number[], frames: number, events: string[], path: Array }}
+ * @returns {{ success: boolean, collected: number[], frames: number, events: string[], path: Array, impacts: Array }}
  */
 export function simulateLevel(level, options = {}) {
     const {
@@ -41,6 +41,28 @@ export function simulateLevel(level, options = {}) {
     const entities = buildLevelEntities(level, physics.world, targetPositions, overrides);
     const { ball, surfaces, targets, gates, fans } = entities;
     mechanics.setLevel({ ball, surfaces, gates, fans, trueElasticity: !!level.trueElasticity });
+
+    // Ball-surface impacts, for the solver's hint drawing
+    const impacts = [];
+    Matter.Events.on(physics.engine, 'collisionStart', event => {
+        event.pairs.forEach(pair => {
+            const other = pair.bodyA === ball.body ? pair.bodyB : pair.bodyB === ball.body ? pair.bodyA : null;
+            const surface = other && surfaces.find(s => s.body === other);
+            if (!surface) return;
+            const contact = pair.collision.supports[0] || ball.body.position;
+            const v = ball.body.velocity;
+            impacts.push({
+                x: contact.x,
+                y: contact.y,
+                normalX: pair.collision.normal.x,
+                normalY: pair.collision.normal.y,
+                velocityBeforeX: v.x,
+                velocityBeforeY: v.y,
+                impactSpeed: Math.hypot(v.x, v.y),
+                surfaceAngle: surface.angle
+            });
+        });
+    });
 
     // Mirror Game.startPlay(): hook sway (level 4+) offsets the start and
     // gives the ball a sideways push. The ball keeps swaying for the 300 ms
@@ -83,6 +105,7 @@ export function simulateLevel(level, options = {}) {
         collected,
         frames,
         events,
-        path
+        path,
+        impacts
     };
 }

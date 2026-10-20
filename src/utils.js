@@ -95,3 +95,12 @@ export function degToRad(degrees) {
 export function radToDeg(radians) {
     return radians * 180 / Math.PI;
 }
+
+/**
+ * Angle of a surface as shown to the player: a whole number in [-90, 90).
+ * A plank looks the same turned by 180°, so 150° and -30° are one angle.
+ */
+export function surfaceAngle(degrees) {
+    const a = ((Math.round(degrees) + 90) % 180 + 180) % 180 - 90;
+    return a === 0 ? 0 : a; // avoid -0
+}

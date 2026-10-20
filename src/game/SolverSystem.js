@@ -28,8 +28,15 @@
  * - Learns from errors using recent failure vectors
  * - Explores widely at high temperature, refines at low temperature
  */
-import * as Matter from 'matter-js';
 import { getLevel } from '../levels.js';
+import { simulateLevel } from './simulateLevel.js';
+import { surfaceAngle } from '../utils.js';
+
+const EXPLORE_ATTEMPTS = 300;
+const REFINE_ATTEMPTS = 120;
+const ATTEMPTS_PER_TICK = 5;
+// Share of explore attempts that ignore the heuristics and try anywhere
+const WILD_GUESS_RATE = 0.3;
 
 export class SolverSystem {
     constructor(game) {
@@ -74,59 +81,19 @@ export class SolverSystem {
         this.running = false;
     }
 
+    maxAttempts() {
+        return this.mode === 'refine' ? REFINE_ATTEMPTS : EXPLORE_ATTEMPTS;
+    }
+
     runStep() {
         if (!this.running) return;
 
-        let config, result;
         try {
-            const level = getLevel(this.game.currentLevel);
-
-            // Update temperature (cool down linearly in explore mode)
-            const maxAttempts = this.mode === 'refine' ? 30 : 50;
-            if (this.mode === 'explore') {
-                this.temperature = 1.0 - (this.currentAttempt / maxAttempts);
-                this.temperature = Math.max(0, this.temperature);
+            // A few simulations per tick: quick enough to find solutions
+            // on harder levels, slow enough to watch the attempts
+            for (let i = 0; i < ATTEMPTS_PER_TICK && this.running; i++) {
+                this.tryOneConfig();
             }
-
-            // Generate configuration
-            config = this.generateRandomConfig(level);
-
-            // Simulate
-            result = this.simulateConfiguration(config, level);
-
-            // Store attempt
-            this.attempts.push({
-                config: config,
-                trajectory: result.trajectory,
-                success: result.success,
-                closestDistance: result.closestDistance,
-                collisionData: result.collisionData
-            });
-
-            // Track error vector for learning
-            if (!result.success && result.trajectory.length > 0) {
-                const ballFinalPos = result.trajectory[result.trajectory.length - 1];
-                let nearestTarget = this.game.targets[0];
-                let minDist = Infinity;
-
-                this.game.targets.forEach(target => {
-                    const dx = target.x - ballFinalPos.x;
-                    const dy = target.y - ballFinalPos.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < minDist) {
-                        minDist = dist;
-                        nearestTarget = target;
-                    }
-                });
-
-                this.errorVectors.push({
-                    dx: nearestTarget.x - ballFinalPos.x,
-                    dy: nearestTarget.y - ballFinalPos.y,
-                    magnitude: minDist
-                });
-            }
-
-            this.currentAttempt++;
         } catch (error) {
             console.error('Solver error:', error);
             this.stop();
@@ -141,7 +108,59 @@ export class SolverSystem {
             return;
         }
 
-        // Check success
+        if (this.running) {
+            setTimeout(() => this.runStep(), 100);
+        }
+    }
+
+    tryOneConfig() {
+        const level = getLevel(this.game.currentLevel);
+        const maxAttempts = this.maxAttempts();
+
+        // Update temperature (cool down linearly in explore mode)
+        if (this.mode === 'explore') {
+            this.temperature = Math.max(0, 1.0 - (this.currentAttempt / maxAttempts));
+        }
+
+        const config = this.generateRandomConfig(level);
+        const result = this.simulateConfiguration(config, level);
+
+        this.attempts.push({
+            config: config,
+            trajectory: result.trajectory,
+            success: result.success,
+            closestDistance: result.closestDistance,
+            collisionData: result.collisionData
+        });
+        // Only recent attempts are drawn; don't keep hundreds of paths
+        if (this.attempts.length > 40) {
+            const keep = this.attempts.filter(a => a.config === this.bestConfig);
+            this.attempts = [...keep, ...this.attempts.slice(-30).filter(a => !keep.includes(a))];
+        }
+
+        // Track error vector for learning
+        if (!result.success && result.trajectory.length > 0) {
+            const ballFinalPos = result.trajectory[result.trajectory.length - 1];
+            let nearestTarget = this.game.targets[0];
+            let minDist = Infinity;
+
+            this.game.targets.forEach(target => {
+                const dist = Math.hypot(target.x - ballFinalPos.x, target.y - ballFinalPos.y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearestTarget = target;
+                }
+            });
+
+            this.errorVectors.push({
+                dx: nearestTarget.x - ballFinalPos.x,
+                dy: nearestTarget.y - ballFinalPos.y,
+                magnitude: minDist
+            });
+        }
+
+        this.currentAttempt++;
+
         if (result.success) {
             console.log('✅ SOLUTION FOUND after', this.currentAttempt, 'attempts!');
             this.bestConfig = config;
@@ -150,21 +169,14 @@ export class SolverSystem {
             return;
         }
 
-        // Track best
         if (!this.bestConfig || result.closestDistance < this.bestDistance) {
             this.bestConfig = config;
             this.bestDistance = result.closestDistance;
         }
 
-        // Check limit
-        const maxAttempts = this.mode === 'refine' ? 30 : 50;
         if (this.currentAttempt >= maxAttempts) {
             this.running = false;
-            return;
         }
-
-        // Continue
-        setTimeout(() => this.runStep(), 100);
     }
 
     generateRandomConfig(level) {
@@ -192,6 +204,11 @@ export class SolverSystem {
             : level.surfaces;
 
         // Generate config
+        // Smart placement goes to the first surface the player can move
+        // (on some levels the first surface is a locked obstacle)
+        const firstMovable = baseConfig.findIndex(s => !s.locked);
+        const wildGuess = this.mode === 'explore' && Math.random() < WILD_GUESS_RATE;
+
         const config = baseConfig.map((surface, index) => {
             if (surface.locked) {
                 return {
@@ -203,10 +220,14 @@ export class SolverSystem {
                 };
             }
 
+            if (wildGuess) {
+                return this.wildSurface(surface, level);
+            }
+
             let baseX, baseY, baseAngle;
 
             if (this.mode === 'explore') {
-                if (index === 0) {
+                if (index === firstMovable) {
                     // First surface: smart placement
                     const ballX = level.ballStart.x;
                     const ballY = level.ballStart.y;
@@ -258,16 +279,17 @@ export class SolverSystem {
             const finalAngle = baseAngle + angleVar;
 
             // CONSTRAINT: First surface below ball
-            if (this.mode === 'explore' && index === 0) {
+            if (this.mode === 'explore' && index === firstMovable) {
                 const ballY = level.ballStart.y;
                 finalY = Math.max(ballY - 20, finalY);
             }
 
+            // Whole pixels and degrees, so the player can copy the hint exactly
             return {
-                x: finalX,
-                y: finalY,
+                x: Math.round(finalX),
+                y: Math.round(finalY),
                 width: surface.width,
-                angle: finalAngle,
+                angle: surfaceAngle(finalAngle),
                 locked: false
             };
         });
@@ -275,141 +297,52 @@ export class SolverSystem {
         return config;
     }
 
+    /**
+     * Anywhere between the ball's height and the bottom of the level area
+     */
+    wildSurface(surface, level) {
+        const width = Math.min(this.game.canvas.width, 900);
+        const height = Math.min(this.game.canvas.height, 700);
+        const top = level.ballStart.y + 40;
+        return {
+            x: Math.round(60 + Math.random() * (width - 120)),
+            y: Math.round(top + Math.random() * Math.max(50, height - 60 - top)),
+            width: surface.width,
+            angle: surfaceAngle(-70 + Math.random() * 140),
+            locked: false
+        };
+    }
+
+    /**
+     * Plays the config with the game's own entities and mechanics, so a
+     * solution found here also works when the player copies it. The hook
+     * stays steady once the solver is used (see Game.hookSways).
+     */
     simulateConfiguration(config, level) {
-        // Create temporary physics
-        const tempEngine = Matter.Engine.create({
-            enableSleeping: false,
-            positionIterations: 10,
-            velocityIterations: 10
-        });
-        const tempWorld = tempEngine.world;
-        tempWorld.gravity.y = 0.5;
-        tempWorld.gravity.scale = 0.001;
-
-        // Create walls
-        const wallOptions = { isStatic: true, friction: 0, restitution: 0.99 };
-        Matter.World.add(tempWorld, [
-            Matter.Bodies.rectangle(this.game.canvas.width / 2, -25, this.game.canvas.width, 50, wallOptions),
-            Matter.Bodies.rectangle(this.game.canvas.width / 2, this.game.canvas.height + 25, this.game.canvas.width, 50, wallOptions),
-            Matter.Bodies.rectangle(-25, this.game.canvas.height / 2, 50, this.game.canvas.height, wallOptions),
-            Matter.Bodies.rectangle(this.game.canvas.width + 25, this.game.canvas.height / 2, 50, this.game.canvas.height, wallOptions)
-        ]);
-
-        // Create ball
-        const ball = Matter.Bodies.circle(level.ballStart.x, level.ballStart.y, 20, {
-            restitution: 0.95,
-            friction: 0,
-            frictionAir: 0,
-            density: 0.001,
-            label: 'ball'
-        });
-        Matter.World.add(tempWorld, ball);
-
-        // Create surfaces
-        const surfaceBodies = [];
-        config.forEach(surfaceConfig => {
-            const angleRad = (surfaceConfig.angle * Math.PI) / 180;
-            const surface = Matter.Bodies.rectangle(
-                surfaceConfig.x,
-                surfaceConfig.y,
-                surfaceConfig.width,
-                20,
-                {
-                    isStatic: true,
-                    angle: angleRad,
-                    friction: 0,
-                    restitution: 0.99,
-                    label: 'surface'
-                }
-            );
-            surfaceBodies.push(surface);
-            Matter.World.add(tempWorld, surface);
+        const targets = this.game.targets;
+        const result = simulateLevel(level, {
+            surfaces: config.map(s => (s.locked ? {} : { x: s.x, y: s.y, angle: s.angle })),
+            targets: targets.map(t => ({ x: t.x, y: t.y })),
+            width: this.game.canvas.width,
+            height: this.game.canvas.height,
+            maxFrames: 420
         });
 
-        // Track collisions
-        const collisionData = [];
-        Matter.Events.on(tempEngine, 'collisionStart', (event) => {
-            event.pairs.forEach(pair => {
-                const isBallCollision = pair.bodyA === ball || pair.bodyB === ball;
-                if (!isBallCollision) return;
-
-                const otherBody = pair.bodyA === ball ? pair.bodyB : pair.bodyA;
-                const surfaceIndex = surfaceBodies.indexOf(otherBody);
-                if (surfaceIndex === -1) return;
-
-                const collision = pair.collision;
-                const contactPoint = collision.supports[0] || { x: ball.position.x, y: ball.position.y };
-                const normal = collision.normal;
-                const velocityBefore = { x: ball.velocity.x, y: ball.velocity.y };
-                const impactSpeed = Math.sqrt(velocityBefore.x * velocityBefore.x + velocityBefore.y * velocityBefore.y);
-
-                collisionData.push({
-                    x: contactPoint.x,
-                    y: contactPoint.y,
-                    normalX: normal.x,
-                    normalY: normal.y,
-                    velocityBeforeX: velocityBefore.x,
-                    velocityBeforeY: velocityBefore.y,
-                    impactSpeed: impactSpeed,
-                    surfaceAngle: config[surfaceIndex].angle
-                });
-            });
-        });
-
-        // Simulate
-        const trajectory = [];
-        let closestDistance = Infinity;
-        let success = false;
-
-        for (let i = 0; i < 300; i++) {
-            Matter.Engine.update(tempEngine, 1000 / 60);
-
-            // Velocity cap
-            const maxVelocity = 100;
-            const velocity = ball.velocity;
-            const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-            if (speed > maxVelocity) {
-                const scale = maxVelocity / speed;
-                Matter.Body.setVelocity(ball, {
-                    x: velocity.x * scale,
-                    y: velocity.y * scale
-                });
-            }
-
-            trajectory.push({
-                x: ball.position.x,
-                y: ball.position.y
-            });
-
-            // Check targets
-            this.game.targets.forEach(target => {
-                if (!target.collected) {
-                    const dx = ball.position.x - target.x;
-                    const dy = ball.position.y - target.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < closestDistance) {
-                        closestDistance = distance;
-                    }
-
-                    if (distance < 30) {
-                        success = true;
-                    }
-                }
-            });
-
-            if (success) break;
+        // Score: stars missed count most, then how close the ball came to one
+        let closest = 0;
+        const missed = targets.filter((t, i) => !result.collected.includes(i));
+        if (missed.length > 0) {
+            closest = Infinity;
+            result.path.forEach(p => missed.forEach(t => {
+                closest = Math.min(closest, Math.hypot(p.x - t.x, p.y - t.y));
+            }));
         }
 
-        // Clean up
-        Matter.World.clear(tempWorld);
-        Matter.Engine.clear(tempEngine);
-
         return {
-            trajectory,
-            success,
-            closestDistance,
-            collisionData
+            trajectory: result.path,
+            success: result.success,
+            closestDistance: closest + missed.length * 1000,
+            collisionData: result.impacts
         };
     }
 }

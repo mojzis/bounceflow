@@ -24,6 +24,7 @@
  * - Color-coded vectors: red=impact, green=normal force, yellow=velocity
  */
 import { getLevel } from '../levels.js';
+import { surfaceAngle } from '../utils.js';
 
 export class RenderingSystem {
     constructor(game) {
@@ -58,7 +59,8 @@ export class RenderingSystem {
 
         // Render surfaces (show angles in replay mode or if toggled on)
         const isReplay = this.game.currentState === 'REPLAY';
-        const displayAngles = isReplay || this.game.showAngles;
+        // Hints show the angle to aim for, so show the current angles too
+        const displayAngles = isReplay || this.game.showAngles || this.game.showHints;
         this.game.surfaces.forEach(surface => surface.render(this.ctx, displayAngles));
         this.game.gates.forEach(gate => gate.render(this.ctx));
 
@@ -354,7 +356,7 @@ export class RenderingSystem {
         if (this.game.solver.attempts.length > 0) {
             ctx.font = '12px sans-serif';
             ctx.fillStyle = 'white';
-            ctx.fillText(`Failed: ${this.game.solver.attempts.filter(a => !a.success).length}`, 20, this.canvas.height - 75);
+            ctx.fillText(`Tried: ${this.game.solver.currentAttempt}`, 20, this.canvas.height - 75);
         }
 
         // Draw last 20 failed attempts as visible trajectories
@@ -487,7 +489,7 @@ export class RenderingSystem {
                     ctx.fillRect(collision.x + 15, collision.y - 45, 100, 40);
                     ctx.fillStyle = '#4ECDC4';
                     ctx.font = 'bold 12px sans-serif';
-                    ctx.fillText(`Angle: ${collision.surfaceAngle.toFixed(1)}°`, collision.x + 20, collision.y - 30);
+                    ctx.fillText(`Angle: ${surfaceAngle(collision.surfaceAngle)}°`, collision.x + 20, collision.y - 30);
                     ctx.fillStyle = 'white';
                     ctx.font = '11px sans-serif';
                     ctx.fillText(`Speed: ${collision.impactSpeed.toFixed(1)}`, collision.x + 20, collision.y - 15);
@@ -510,9 +512,17 @@ export class RenderingSystem {
                 const x2 = configSurface.x + Math.cos(angleRad) * halfWidth;
                 const y2 = configSurface.y + Math.sin(angleRad) * halfWidth;
 
+                // Green when the player's surface matches the hint
+                const placed = this.game.surfaces[index];
+                const angleOk = placed && surfaceAngle(placed.angle) === surfaceAngle(configSurface.angle);
+                const placeOk = placed &&
+                    Math.abs(placed.x - configSurface.x) <= 1 &&
+                    Math.abs(placed.y - configSurface.y) <= 1;
+                const color = angleOk && placeOk ? '#7CFC8A' : '#4ECDC4';
+
                 // Draw ghost surface with dashed line
                 ctx.save();
-                ctx.strokeStyle = '#4ECDC4';
+                ctx.strokeStyle = color;
                 ctx.lineWidth = 20;
                 ctx.globalAlpha = 0.5;
                 ctx.setLineDash([10, 10]);
@@ -525,19 +535,21 @@ export class RenderingSystem {
 
                 // Draw center point
                 ctx.globalAlpha = 0.7;
-                ctx.fillStyle = '#4ECDC4';
+                ctx.fillStyle = placeOk ? '#7CFC8A' : '#4ECDC4';
                 ctx.beginPath();
                 ctx.arc(configSurface.x, configSurface.y, 6, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Draw angle label
+                // Angle to aim for (below the ghost, so it doesn't cover the
+                // player's own angle label above their surface)
                 ctx.globalAlpha = 0.9;
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                ctx.fillRect(configSurface.x - 30, configSurface.y - 35, 60, 22);
-                ctx.fillStyle = '#4ECDC4';
-                ctx.font = 'bold 12px sans-serif';
+                ctx.fillRect(configSurface.x - 36, configSurface.y + 16, 72, 22);
+                ctx.fillStyle = angleOk ? '#7CFC8A' : '#4ECDC4';
+                ctx.font = 'bold 13px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(`${configSurface.angle.toFixed(0)}°`, configSurface.x, configSurface.y - 18);
+                const tick = angleOk ? ' ✓' : '';
+                ctx.fillText(`${surfaceAngle(configSurface.angle)}°${tick}`, configSurface.x, configSurface.y + 32);
 
                 ctx.restore();
             });

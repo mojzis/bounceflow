@@ -198,11 +198,13 @@ Matter.js engine settings (in `PhysicsManager`):
 **Solver System** (`SolverSystem`)
 - AI solver using simulated annealing algorithm
 - Generates smart surface configurations with heuristics
-- First surface intelligently placed below ball toward target
-- Runs physics simulations in temporary engine (300 frames max)
+- First movable surface intelligently placed below ball toward target
+- Runs `simulateLevel()` (the game's own entities), so hints work when copied; success = all stars
+- Hints use whole pixels/degrees; the ghost turns green when the player's surface matches
+- The hook stops swaying once the solver is used on a level
 - Visualizes attempts as ghost trajectories (last 20 failures shown)
 - Shows solution as cyan dashed surfaces with angle labels
-- Tracks best attempt when no solution found within 50 attempts
+- 300 attempts (5 per tick), 30% of them wild guesses anywhere; best attempt shown if none succeeds
 - Two modes:
   - **Explore**: Starts from scratch, wide exploration
   - **Refine**: Uses current player setup, focused refinement
@@ -223,7 +225,8 @@ Matter.js engine settings (in `PhysicsManager`):
 **Input System** (`InputManager` + `UIManager`)
 - Mouse: Left-click drag (move), right-click drag (rotate surfaces)
 - Touch: Single touch drag (move), handles mobile
-- Keyboard acceleration: Held keys speed up from 1x → 5x over 1 second
+- Keyboard: a tap is exactly one step (1° / 1px, Shift = 5° / 5px); holding repeats after 300 ms and speeds up
+- Surfaces snap to whole pixels and degrees; angles are shown in [-90°, 90°) (`surfaceAngle()` in utils)
 - Keyboard shortcuts:
   - `Space` - Release ball
   - `R` - Restart level

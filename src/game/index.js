@@ -213,11 +213,12 @@ export class Game {
     }
 
     /**
-     * Steady hook: early levels and World 3 don't swing the ball.
+     * Steady hook: early levels and World 3 don't swing the ball. Once the
+     * solver is used the hook holds still too, so its hint can be copied.
      */
     hookSways() {
         const level = getLevel(this.currentLevel);
-        return this.currentLevel >= 4 && !level.steadyHook;
+        return this.currentLevel >= 4 && !level.steadyHook && !this.usedSolver;
     }
 
     handleMechanicsEvent(type, data) {

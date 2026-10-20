@@ -11,7 +11,8 @@ import {
     pointInCircle,
     pointNearLine,
     degToRad,
-    radToDeg
+    radToDeg,
+    surfaceAngle
 } from './utils.js';
 
 describe('lerp', () => {
@@ -125,5 +126,22 @@ describe('radToDeg', () => {
 
     it('should handle negative angles', () => {
         expect(radToDeg(-Math.PI / 2)).toBeCloseTo(-90);
+    });
+});
+
+describe('surfaceAngle', () => {
+    it('keeps whole angles in [-90, 90)', () => {
+        expect(surfaceAngle(35)).toBe(35);
+        expect(surfaceAngle(-35)).toBe(-35);
+        expect(surfaceAngle(325)).toBe(-35);
+        expect(surfaceAngle(145)).toBe(-35);
+        expect(surfaceAngle(90)).toBe(-90);
+        expect(surfaceAngle(180)).toBe(0);
+        expect(Object.is(surfaceAngle(-180), 0)).toBe(true);
+    });
+
+    it('rounds to a whole degree', () => {
+        expect(surfaceAngle(34.6)).toBe(35);
+        expect(surfaceAngle(-0.4)).toBe(0);
     });
 });
