@@ -110,7 +110,7 @@ export class UIManager {
             const isMovementKey = ['w', 'W', 'a', 'A', 's', 'S', 'd', 'D', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'q', 'Q', 'e', 'E'].includes(e.key);
 
             if (isMovementKey) {
-                if (!e.repeat && !this.game.input.heldKeys.has(e.key)) {
+                if (!e.repeat && !this.game.input.isKeyHeld(e.key)) {
                     this.game.input.trackKeyDown(e.key, e.shiftKey);
                 }
                 e.preventDefault();
@@ -144,10 +144,11 @@ export class UIManager {
         });
 
         document.addEventListener('keyup', (e) => {
-            if (this.game.input.heldKeys.has(e.key)) {
-                this.game.input.trackKeyUp(e.key);
-            }
+            this.game.input.trackKeyUp(e.key);
         });
+
+        // Key releases are lost while the window is unfocused
+        window.addEventListener('blur', () => this.game.input.releaseAllKeys());
     }
 
     showWorldTransition(world) {

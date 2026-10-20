@@ -210,6 +210,7 @@ export class LevelManager {
         });
         this.game.surfaces = [];
         this.game.selectedSurfaceIndex = -1;
+        this.game.input?.releaseAllKeys();
 
         (this.game.gates || []).forEach(gate => gate.remove());
         this.game.gates = [];
