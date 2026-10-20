@@ -101,15 +101,3 @@ export function fanDirection(dir) {
         default: return { x: 0, y: -1 };
     }
 }
-
-/**
- * True when a level uses any mechanic the AI solver doesn't simulate.
- */
-export function levelHasSpecialMechanics(level) {
-    if (level.trueElasticity) return true;
-    if (level.gates && level.gates.length > 0) return true;
-    if (level.fans && level.fans.length > 0) return true;
-    if (level.surfaces.some(s => s.material && s.material !== 'normal')) return true;
-    if (level.targets.some(t => t.effect)) return true;
-    return false;
-}

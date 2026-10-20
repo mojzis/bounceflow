@@ -26,11 +26,13 @@
  * DOM Elements:
  * - playButton, dropButton, restartButton, replayButton
  * - hintButton, refineButton, helpButton
- * - levelDisplay, levelName, hintText
+ * - levelSelect, levelName, hintText
  * - scoreTime, scoreAttempts, scorePoints
  * - elasticityFill (progress bar)
  * - helpOverlay, victoryOverlay
  */
+import { LEVELS, WORLDS } from '../levels.js';
+
 export class UIManager {
     constructor(game) {
         this.game = game;
@@ -42,7 +44,7 @@ export class UIManager {
         this.playButton = document.getElementById('playButton');
         this.dropButton = document.getElementById('dropButton');
         this.restartButton = document.getElementById('restartButton');
-        this.levelDisplay = document.getElementById('level-display');
+        this.levelSelect = document.getElementById('level-select');
         this.levelName = document.getElementById('level-name');
         this.hintText = document.getElementById('hint-text');
         this.elasticityFill = document.getElementById('elasticity-fill');
@@ -65,7 +67,32 @@ export class UIManager {
         this.worldMechanics = document.getElementById('world-mechanics-grid');
         this.weightValue = document.getElementById('weight-value');
 
+        this.fillLevelSelect();
         this.setupEventHandlers();
+    }
+
+    /**
+     * Level picker, grouped by world
+     */
+    fillLevelSelect() {
+        const worldStarts = [{ id: 1, startLevel: 1, title: 'BOUNCING' }, ...WORLDS];
+        LEVELS.forEach(level => {
+            const world = worldStarts.find(w => w.startLevel === level.id);
+            if (world) {
+                const group = document.createElement('optgroup');
+                group.label = `World ${world.id}: ${world.title}`;
+                this.levelSelect.appendChild(group);
+            }
+            const option = document.createElement('option');
+            option.value = String(level.id);
+            option.textContent = `Level ${level.id}`;
+            this.levelSelect.lastElementChild.appendChild(option);
+        });
+    }
+
+    showLevel(levelId, name) {
+        this.levelSelect.value = String(levelId);
+        this.levelName.textContent = name;
     }
 
     setupEventHandlers() {
@@ -77,6 +104,10 @@ export class UIManager {
         this.hintButton.addEventListener('click', () => this.game.toggleHints());
         this.refineButton.addEventListener('click', () => this.game.startRefineSolver());
         this.helpButton.addEventListener('click', () => this.game.toggleHelp());
+        this.levelSelect.addEventListener('change', () => {
+            this.game.goToLevel(parseInt(this.levelSelect.value, 10));
+            this.levelSelect.blur(); // keys go back to the game
+        });
         this.closeHelpButton.addEventListener('click', () => this.game.hideHelp());
         this.startWorldButton.addEventListener('click', () => this.game.startWorld());
 

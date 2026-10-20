@@ -206,6 +206,17 @@ export class Game {
         this.ui.helpOverlay.classList.add('hidden');
     }
 
+    /**
+     * Jump to any level (level picker)
+     */
+    goToLevel(levelId) {
+        this.ui.worldTransitionOverlay.classList.add('hidden');
+        this.ui.victoryOverlay.classList.add('hidden');
+        this.input.releaseAllKeys();
+        this.currentLevel = levelId;
+        this.levelManager.loadLevel(levelId);
+    }
+
     startWorld() {
         // Hide world transition overlay and load the world's first level
         this.ui.worldTransitionOverlay.classList.add('hidden');

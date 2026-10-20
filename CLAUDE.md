@@ -175,6 +175,8 @@ Previous implementation used scattered boolean flags that could get into invalid
 
 **`mechanics.js`** - World 3 rules as data + pure functions (materials, weights, star effects, gates, fan force)
 
+**`progress.js`** - Remembers the current level in localStorage (start order: `?level=N`, saved level, level 1)
+
 **`popups.js`** - Floating feedback text ("Boing!", "SMASH!")
 
 **`utils.js`** - Math and geometry utilities
@@ -296,6 +298,7 @@ src/
 ├── fan.js                     # Fan air zone
 ├── bird.js                    # Flying obstacle
 ├── mechanics.js               # World 3 rules (materials, weight, effects)
+├── progress.js                # Saved level (localStorage)
 ├── popups.js                  # Floating feedback text
 ├── levels.js                  # Level definitions + world intros (33 levels)
 ├── utils.js                   # Math/geometry utilities
@@ -337,7 +340,7 @@ When adding a World 3 level, add a solution to `world3.test.js`. A quick way to 
 ### Manual Testing
 
 Manual testing workflow for gameplay:
-1. Start dev server: `npm run dev` (add `?level=26` to the URL to jump to a level)
+1. Start dev server: `npm run dev` (the level picker or `?level=26` jumps to a level; reloads resume the last level)
 2. Test interactions in browser
 3. Verify solver works: Press `?` on any level
 4. Test replay: Complete level, verify replay button shows, click to watch replay with force vectors
