@@ -31,94 +31,117 @@ export const LEVELS = [
         hint: "Position the surface, then press Space to release the ball!"
     },
     {
+        propertyPattern: "static",
+        cycleSpeed: 0,
+        trueElasticity: true,
+        steadyHook: true,
         id: 2,
-        name: "Double Bounce",
-        ballStart: { x: 100, y: 100 },
+        name: "Bonk!",
+        ballStart: { x: 150, y: 100 },
+        ballElasticity: 0.6,
         surfaces: [
-            { x: 300, y: 400, width: 200, angle: -20, locked: false },
-            { x: 600, y: 350, width: 180, angle: 15, locked: false }
+            { x: 560, y: 520, width: 200, angle: 10, locked: false }
+        ],
+        bumpers: [
+            { x: 300, y: 420, radius: 44 }
         ],
         targets: [
-            { x: 700, y: 250 }
+            { x: 420, y: 260 }
         ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "Use multiple surfaces to reach the target!"
+        hint: "Pink bumpers kick the ball away - BONK! Roll the ball into the bumper to reach the high star."
     },
     {
+        propertyPattern: "static",
+        cycleSpeed: 0,
+        trueElasticity: true,
+        steadyHook: true,
         id: 3,
         name: "Boing!",
         ballStart: { x: 150, y: 100 },
         surfaces: [
             { x: 250, y: 380, width: 220, angle: 20, locked: false },
-            { x: 500, y: 500, width: 260, angle: 0, locked: true, material: 'trampoline' }
+            { x: 500, y: 500, width: 240, angle: 0, locked: true, material: "trampoline" }
         ],
         targets: [
-            { x: 640, y: 260 }
+            { x: 660, y: 200 }
         ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        trueElasticity: true,
-        steadyHook: true,
         ballElasticity: 0.6,
         hint: "The blue trampoline is extra springy - bounce the ball onto it to reach the star!"
     },
     {
+        propertyPattern: "static",
+        cycleSpeed: 0,
+        trueElasticity: true,
+        steadyHook: true,
         id: 4,
-        name: "Obstacle Course",
-        ballStart: { x: 200, y: 100 },
+        name: "Cloud Hop",
+        ballStart: { x: 150, y: 100 },
+        ballElasticity: 0.75,
         surfaces: [
-            { x: 300, y: 300, width: 250, angle: 0, locked: true },  // Locked obstacle
-            { x: 400, y: 450, width: 200, angle: 30, locked: false },
-            { x: 600, y: 350, width: 180, angle: -20, locked: false }
+            { x: 250, y: 300, width: 180, angle: 20, locked: false },
+            { x: 560, y: 450, width: 220, angle: 0, locked: true, material: "cloud" },
+            { x: 440, y: 520, width: 130, angle: 90, locked: true },
+            { x: 680, y: 520, width: 130, angle: 90, locked: true },
+            { x: 560, y: 590, width: 260, angle: 0, locked: true },
+            { x: 680, y: 330, width: 180, angle: 90, locked: true }
         ],
         targets: [
-            { x: 700, y: 250 }
+            { x: 380, y: 330 },
+            { x: 560, y: 530, fixed: true }
         ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "Gray surfaces are locked - work around them!"
+        hint: "Clouds hold the ball for just one bounce - then POOF! Grab the first star, bounce on the cloud, and drop into the box."
     },
     {
+        propertyPattern: "static",
+        cycleSpeed: 0,
+        trueElasticity: true,
+        steadyHook: true,
         id: 5,
         name: "Heavy Metal",
         ballStart: { x: 150, y: 100 },
         surfaces: [
-            { x: 230, y: 400, width: 220, angle: 20, locked: false },
-            { x: 520, y: 400, width: 180, angle: 0, locked: true, material: 'glass' },
-            { x: 440, y: 465, width: 120, angle: 90, locked: true },
-            { x: 600, y: 465, width: 120, angle: 90, locked: true },
-            { x: 520, y: 530, width: 180, angle: 0, locked: true }
+            { x: 300, y: 450, width: 200, angle: -15, locked: false },
+            { x: 540, y: 400, width: 180, angle: 0, locked: true, material: "glass" },
+            { x: 450, y: 465, width: 120, angle: 90, locked: true },
+            { x: 630, y: 465, width: 120, angle: 90, locked: true },
+            { x: 540, y: 530, width: 200, angle: 0, locked: true }
         ],
         targets: [
-            { x: 150, y: 260, effect: 'heavy' },
-            { x: 520, y: 470, fixed: true }
+            { x: 220, y: 280, effect: "heavy" },
+            { x: 540, y: 470, fixed: true }
         ],
-        propertyPattern: 'static',
+        ballElasticity: 0.8,
+        hint: "Stars with a ring change the ball. Grab the heavy star, then smash the glass box!"
+    },
+    {
+        propertyPattern: "static",
         cycleSpeed: 0,
         trueElasticity: true,
         steadyHook: true,
-        ballElasticity: 0.8,
-        hint: "Stars with a ring change the ball. Grab the heavy star, then smash the glass!"
-    },
-    {
         id: 6,
-        name: "Narrow Gap",
+        name: "Portal",
         ballStart: { x: 150, y: 100 },
+        ballElasticity: 0.6,
         surfaces: [
-            { x: 280, y: 350, width: 180, angle: 0, locked: true },
-            { x: 520, y: 350, width: 180, angle: 0, locked: true },
-            { x: 400, y: 450, width: 150, angle: 40, locked: false },
-            { x: 650, y: 250, width: 120, angle: -25, locked: false }
+            { x: 300, y: 420, width: 200, angle: 15, locked: false },
+            { x: 720, y: 100, width: 160, angle: 0, locked: true },
+            { x: 640, y: 175, width: 150, angle: 90, locked: true },
+            { x: 800, y: 175, width: 150, angle: 90, locked: true },
+            { x: 720, y: 250, width: 160, angle: 0, locked: true }
+        ],
+        portals: [
+            { a: { x: 600, y: 600 }, b: { x: 720, y: 150 } }
         ],
         targets: [
-            { x: 700, y: 180 }
+            { x: 720, y: 200, fixed: true }
         ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "Thread the needle between the locked surfaces!"
+        hint: "Go into one portal and pop out of the other! The star is locked in a box - can you get in?"
     },
     {
+        propertyPattern: "static",
+        cycleSpeed: 0,
+        trueElasticity: true,
+        steadyHook: true,
         id: 7,
         name: "Feather Float",
         ballStart: { x: 150, y: 100 },
@@ -126,38 +149,43 @@ export const LEVELS = [
             { x: 300, y: 420, width: 220, angle: 20, locked: false }
         ],
         fans: [
-            { x: 470, y: 340, width: 260, height: 440, dir: 'up', strength: 1.3 }
+            { x: 500, y: 320, width: 200, height: 480, dir: "up", strength: 1.3 }
         ],
         targets: [
-            { x: 150, y: 260, effect: 'light' },
-            { x: 480, y: 150 }
+            { x: 150, y: 260, effect: "light" },
+            { x: 520, y: 120 }
         ],
-        propertyPattern: 'static',
+        ballElasticity: 0.6,
+        hint: "Fans blow light things away. Grab the feather star and ride the wind up!"
+    },
+    {
+        id: 8,
+        name: "Pinball",
+        ballStart: { x: 150, y: 80 },
+        surfaces: [
+            { x: 330, y: 520, width: 160, angle: 20, locked: false },
+            { x: 236, y: 653, width: 191, angle: 4, locked: true, material: "trampoline" },
+            { x: 517, y: 453.5, width: 493, angle: 90, locked: true },
+            { x: 720, y: 660, width: 400, angle: 0, locked: true }
+        ],
+        bumpers: [
+            { x: 339, y: 356, radius: 28 }
+        ],
+        targets: [
+            { x: 797, y: 445, fixed: true }
+        ],
+        propertyPattern: "static",
         cycleSpeed: 0,
         trueElasticity: true,
         steadyHook: true,
         ballElasticity: 0.6,
-        hint: "Fans blow light things away. Become light as a feather and ride the wind up!"
+        hint: "Pinball! Bounce on the trampoline and let the pink bumper flick the ball over the wall."
     },
     {
-        id: 8,
-        name: "Zigzag",
-        ballStart: { x: 100, y: 80 },
-        surfaces: [
-            { x: 200, y: 200, width: 140, angle: -45, locked: true },
-            { x: 380, y: 280, width: 140, angle: 45, locked: true },
-            { x: 560, y: 360, width: 140, angle: -45, locked: true },
-            { x: 300, y: 400, width: 120, angle: 30, locked: false },
-            { x: 500, y: 450, width: 120, angle: -30, locked: false }
-        ],
-        targets: [
-            { x: 680, y: 420 }
-        ],
-        propertyPattern: 'static',
+        propertyPattern: "static",
         cycleSpeed: 0,
-        hint: "Navigate the zigzag obstacle course!"
-    },
-    {
+        trueElasticity: true,
+        steadyHook: true,
         id: 9,
         name: "Power Star",
         ballStart: { x: 150, y: 100 },
@@ -165,50 +193,59 @@ export const LEVELS = [
             { x: 260, y: 460, width: 240, angle: 20, locked: false }
         ],
         targets: [
-            { x: 150, y: 260, effect: 'bouncy' },
-            { x: 450, y: 350 }
+            { x: 150, y: 260, effect: "bouncy" },
+            { x: 530, y: 370 }
         ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        trueElasticity: true,
-        steadyHook: true,
         ballElasticity: 0.5,
-        hint: "This ball is soft. Grab the bouncy star first, then bounce up to the other star!"
+        hint: "This ball is soft. Grab the bouncy star first, then bounce over to the other star!"
     },
     {
         id: 10,
-        name: "Precision Strike",
-        ballStart: { x: 400, y: 100 },
+        name: "Cloud Lid",
+        ballStart: { x: 150, y: 80 },
         surfaces: [
-            { x: 220, y: 280, width: 160, angle: 15, locked: true },
-            { x: 580, y: 280, width: 160, angle: -15, locked: true },
-            { x: 400, y: 420, width: 100, angle: 0, locked: false },
-            { x: 300, y: 350, width: 80, angle: 30, locked: false },
-            { x: 500, y: 350, width: 80, angle: -30, locked: false }
+            { x: 160, y: 460, width: 170, angle: -15, locked: false },
+            { x: 459, y: 418, width: 170, angle: 0, locked: true, material: "cloud" },
+            { x: 374, y: 508, width: 160, angle: 90, locked: true },
+            { x: 544, y: 508, width: 160, angle: 90, locked: true },
+            { x: 459, y: 588, width: 190, angle: 0, locked: true }
+        ],
+        portals: [
+            { a: { x: 677, y: 557 }, b: { x: 402, y: 194 } }
         ],
         targets: [
-            { x: 400, y: 200 },
-            { x: 250, y: 380 },
-            { x: 550, y: 380 }
+            { x: 459, y: 518, fixed: true }
         ],
-        propertyPattern: 'static',
+        propertyPattern: "static",
         cycleSpeed: 0,
-        hint: "Thread through tight gaps with precise angles!"
+        trueElasticity: true,
+        steadyHook: true,
+        ballElasticity: 0.62,
+        hint: "The star is under a cloud lid! Clouds puff away after one bounce - pop it, then take the portal back over the top."
     },
     {
         id: 11,
-        name: "The Climb",
-        ballStart: { x: 100, y: 340 },
+        name: "Updraft",
+        ballStart: { x: 120, y: 80 },
         surfaces: [
-            { x: 350, y: 420, width: 200, angle: 45, locked: false },
-            { x: 550, y: 350, width: 180, angle: -30, locked: false }
+            { x: 330, y: 600, width: 170, angle: -15, locked: false }
+        ],
+        bumpers: [
+            { x: 286, y: 524, radius: 28 }
+        ],
+        fans: [
+            { x: 594, y: 420, width: 189, height: 480, dir: "up", strength: 1.3 }
         ],
         targets: [
-            { x: 650, y: 380 }
+            { x: 120, y: 210, effect: "light", fixed: true },
+            { x: 611, y: 121, fixed: true }
         ],
-        propertyPattern: 'static',
+        propertyPattern: "static",
         cycleSpeed: 0,
-        hint: "Angle surfaces to bounce upward to the target!"
+        trueElasticity: true,
+        steadyHook: true,
+        ballElasticity: 0.6,
+        hint: "Get light as a feather, then let the bumper bonk the ball over to the fan!"
     },
     {
         id: 12,
@@ -234,45 +271,64 @@ export const LEVELS = [
         hint: "Get heavy, bounce off the trampoline, and smash into the glass box!"
     },
     {
+        propertyPattern: "static",
+        cycleSpeed: 0,
+        trueElasticity: true,
+        steadyHook: true,
         id: 13,
         name: "Chain Reaction",
-        ballStart: { x: 100, y: 50 },
+        ballStart: { x: 120, y: 120 },
         surfaces: [
-            { x: 250, y: 450, width: 180, angle: 35, locked: false },
-            { x: 450, y: 380, width: 160, angle: -30, locked: false },
-            { x: 600, y: 300, width: 150, angle: 45, locked: false },
-            { x: 400, y: 200, width: 140, angle: -40, locked: false }
+            { x: 250, y: 470, width: 180, angle: -15, locked: false },
+            { x: 420, y: 620, width: 260, angle: -5, locked: true, material: "trampoline" },
+            { x: 750, y: 60, width: 280, angle: 0, locked: true },
+            { x: 620, y: 165, width: 210, angle: 90, locked: true },
+            { x: 880, y: 165, width: 210, angle: 90, locked: true },
+            { x: 750, y: 280, width: 240, angle: 0, locked: true, material: "cloud" }
+        ],
+        portals: [
+            { a: { x: 540, y: 290 }, b: { x: 680, y: 110 } }
         ],
         targets: [
-            { x: 250, y: 150 },
-            { x: 550, y: 150 },
-            { x: 400, y: 80 }
+            { x: 750, y: 230, fixed: true },
+            { x: 750, y: 470, fixed: true }
         ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "Create a perfect chain of bounces!"
+        ballElasticity: 0.35,
+        hint: "Bounce on the trampoline into the orange portal. The cloud floor only holds for one bounce!"
     },
     {
+        propertyPattern: "static",
+        cycleSpeed: 0,
+        trueElasticity: true,
+        steadyHook: true,
         id: 14,
         name: "Grand Finale",
-        ballStart: { x: 400, y: 100 },
+        ballStart: { x: 700, y: 120 },
         surfaces: [
-            { x: 280, y: 300, width: 180, angle: 0, locked: true },
-            { x: 520, y: 300, width: 180, angle: 0, locked: true },
-            { x: 200, y: 450, width: 180, angle: 50, locked: false },
-            { x: 400, y: 450, width: 150, angle: 0, locked: false },
-            { x: 600, y: 450, width: 180, angle: -50, locked: false },
-            { x: 350, y: 200, width: 120, angle: -30, locked: false }
+            { x: 560, y: 450, width: 160, angle: 20, locked: false },
+            { x: 760, y: 380, width: 140, angle: -20, locked: false },
+            { x: 520, y: 630, width: 240, angle: 5, locked: true, material: "trampoline" },
+            { x: 170, y: 60, width: 280, angle: 0, locked: true },
+            { x: 40, y: 165, width: 210, angle: 90, locked: true },
+            { x: 300, y: 165, width: 210, angle: 90, locked: true },
+            { x: 170, y: 280, width: 240, angle: 0, locked: true, material: "cloud" },
+            { x: 170, y: 520, width: 200, angle: 0, locked: true, material: "glass" },
+            { x: 80, y: 585, width: 130, angle: 90, locked: true },
+            { x: 260, y: 585, width: 130, angle: 90, locked: true },
+            { x: 170, y: 650, width: 200, angle: 0, locked: true }
+        ],
+        bumpers: [
+            { x: 380, y: 450, radius: 30 }
+        ],
+        portals: [
+            { a: { x: 380, y: 260 }, b: { x: 240, y: 110 } }
         ],
         targets: [
-            { x: 150, y: 250 },
-            { x: 300, y: 250 },
-            { x: 650, y: 250 },
-            { x: 500, y: 130 }
+            { x: 120, y: 230, effect: "heavy", fixed: true },
+            { x: 170, y: 590, fixed: true }
         ],
-        propertyPattern: 'static',
-        cycleSpeed: 0,
-        hint: "The ultimate challenge - collect all four stars!"
+        ballElasticity: 0.35,
+        hint: "Everything at once: trampoline, portal, heavy star... then smash the glass!"
     },
     // WORLD 2: ELASTICITY - Levels 15-24
     {
@@ -485,23 +541,23 @@ export const LEVELS = [
         name: "Charge Up",
         ballStart: { x: 120, y: 100 },
         surfaces: [
-            { x: 160, y: 430, width: 160, angle: 15, locked: true, material: 'trampoline' },
-            { x: 420, y: 450, width: 160, angle: -15, locked: false, material: 'trampoline' },
+            { x: 160, y: 430, width: 160, angle: 15, locked: true, material: "trampoline" },
+            { x: 420, y: 450, width: 160, angle: -15, locked: false, material: "trampoline" },
             { x: 600, y: 300, width: 140, angle: 30, locked: false },
             { x: 770, y: 125, width: 150, angle: 0, locked: true },
             { x: 770, y: 275, width: 150, angle: 0, locked: true },
             { x: 845, y: 200, width: 150, angle: 90, locked: true }
         ],
         gates: [
-            { x: 700, y: 200, width: 140, angle: 90, type: 'cyan' }
+            { x: 700, y: 200, width: 140, angle: 90, type: "cyan" }
         ],
         targets: [
             { x: 760, y: 200, fixed: true }
         ],
-        propertyPattern: 'static',
+        propertyPattern: "static",
         cycleSpeed: 0,
         trueElasticity: true,
-        ballElasticity: 0.45,
+        ballElasticity: 0.3,
         steadyHook: true,
         hint: "Cyan gates only open for bouncy balls. Each trampoline bounce charges the ball up!"
     },

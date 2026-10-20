@@ -180,7 +180,7 @@ Clouds are a surface material (`material: 'cloud'`): one bounce, then they puff 
 - `WORLDS` holds the intro screen for each world; `getWorldStartingAt(id)`
 - `getLevel(id)` and `getTotalLevels()` helpers
 - 28 levels in 3 worlds: Bouncing (1-14), Elasticity (15-24), Materials & Mass (25-28)
-- World 1 brings in one toy every other level (3 trampoline, 5 heavy star + glass, 7 light star + fan, 9 bouncy star, 12 combo); World 3 adds sponges and gates and mixes everything
+- World 1 has a toy on every level after the first: new toys at 2 bumper, 3 trampoline, 4 cloud, 5 heavy star + glass, 6 portal, 7 light star + fan, 9 bouncy star; combos at 8, 10-14 (14 uses almost everything). World 3 adds sponges and gates and mixes everything
 
 **`mechanics.js`** - Toy rules as data + pure functions (materials, weights, star effects, gates, fan force)
 
@@ -342,7 +342,7 @@ npm run test:ui
 - `mechanics.test.js` - Toy rules and small physics scenarios (trampoline, sponge, glass, gates, fans, bumpers, clouds, portals)
 - `toys.test.js` - Every toy level (`trueElasticity`) has a known solution, its starting layout doesn't win, and removing its key mechanic breaks it
 
-When adding a toy level, add a solution to `toys.test.js`. A quick way to find one is a random search over the movable surfaces with `simulateLevel()`.
+When adding a toy level, add a solution to `toys.test.js`. A quick way to find one is a random search over the movable surfaces with `simulateLevel()`. The share of random setups that win is a good difficulty measure: World 1 toy levels sit around 0.3-1.5%, World 3 below 1%.
 
 **Test file location:** Place test files next to source files with `.test.js` suffix (e.g., `utils.test.js` next to `utils.js`)
 
