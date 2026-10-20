@@ -1,6 +1,7 @@
 /**
- * World 3 levels: each one has a known solution, and removing the level's
- * key mechanic breaks that solution (so the mechanic really matters).
+ * Toy levels (trampolines, glass, fans, power stars, gates...): each one has
+ * a known solution, and removing the level's key mechanic breaks that
+ * solution (so the mechanic really matters).
  *
  * Solutions were found with a random search over the movable surfaces
  * and checked to tolerate small nudges. They run at two window heights
@@ -15,20 +16,23 @@ vi.spyOn(console, 'warn').mockImplementation(() => {});
 
 // Movable surface positions, in order of the level's unlocked surfaces
 const SOLUTIONS = {
-    26: [{ x: 175, y: 324, angle: 26 }],
-    27: [{ x: 374, y: 317, angle: -2 }],
-    28: [{ x: 566, y: 362, angle: -10 }, { x: 605, y: 174, angle: -27 }],
-    29: [{ x: 210, y: 362, angle: 23 }],
-    30: [{ x: 185, y: 306, angle: 26 }],
-    31: [{ x: 153, y: 294, angle: 34 }],
-    32: [{ x: 227, y: 264, angle: 15 }],
-    33: [{ x: 160, y: 468, angle: 15 }, { x: 611, y: 203, angle: 53 }]
+    // World 1: one new toy at a time
+    3: [{ x: 84, y: 227, angle: 39 }],
+    5: [{ x: 67, y: 324, angle: 20 }],
+    7: [{ x: 100, y: 434, angle: 27 }],
+    9: [{ x: 121, y: 353, angle: 25 }],
+    12: [{ x: 89, y: 230, angle: 40 }],
+    // World 3: toys combined
+    25: [{ x: 374, y: 317, angle: -2 }],
+    26: [{ x: 566, y: 362, angle: -10 }, { x: 605, y: 174, angle: -27 }],
+    27: [{ x: 227, y: 264, angle: 15 }],
+    28: [{ x: 160, y: 468, angle: 15 }, { x: 611, y: 203, angle: 53 }]
 };
 
 // What to take away to show the level needs its mechanic
 const CONTROLS = {
-    26: 'materials', 27: 'materials', 28: 'materials', 29: 'effects',
-    30: 'effects', 31: 'effects', 32: 'effects', 33: 'materials'
+    3: 'materials', 5: 'effects', 7: 'effects', 9: 'effects', 12: 'materials',
+    25: 'materials', 26: 'materials', 27: 'effects', 28: 'materials'
 };
 
 const HEIGHTS = [800, 1100];
@@ -48,19 +52,23 @@ function withoutMechanic(level, kind) {
     return copy;
 }
 
-const world3 = LEVELS.filter(l => l.id >= 26);
+const toyLevels = LEVELS.filter(l => l.trueElasticity);
 
-describe('World 3 levels', () => {
+describe('Toy levels', () => {
     it('has a world intro for World 3', () => {
-        expect(getWorldStartingAt(26)).toBe(WORLDS.find(w => w.id === 3));
-        expect(getWorldStartingAt(27)).toBeNull();
+        expect(getWorldStartingAt(25)).toBe(WORLDS.find(w => w.id === 3));
+        expect(getWorldStartingAt(26)).toBeNull();
+    });
+
+    it('introduces toys in World 1', () => {
+        expect(toyLevels.filter(l => l.id < 15).length).toBeGreaterThanOrEqual(4);
     });
 
     it('has a known solution for every level', () => {
-        expect(world3.map(l => l.id).sort()).toEqual(Object.keys(SOLUTIONS).map(Number));
+        expect(toyLevels.map(l => l.id).sort((a, b) => a - b)).toEqual(Object.keys(SOLUTIONS).map(Number));
     });
 
-    world3.forEach(level => {
+    toyLevels.forEach(level => {
         const overrides = toOverrides(level, SOLUTIONS[level.id]);
 
         it(`level ${level.id} (${level.name}) can be solved`, () => {

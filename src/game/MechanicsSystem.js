@@ -1,5 +1,5 @@
 /**
- * MechanicsSystem - World 3 rules hooked into the physics engine
+ * MechanicsSystem - Toy rules (materials, gates, fans, star effects) hooked into the physics engine
  *
  * Responsibilities:
  * - Set the bounce of every ball contact (materials, true elasticity)

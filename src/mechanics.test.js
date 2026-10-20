@@ -1,5 +1,5 @@
 /**
- * Unit tests for World 3 mechanics rules and their physics behavior
+ * Unit tests for toy mechanics rules and their physics behavior
  */
 
 import { describe, it, expect, vi } from 'vitest';

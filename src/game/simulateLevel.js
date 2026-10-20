@@ -2,13 +2,15 @@
  * Headless level run: plays a level with a given surface setup using the
  * real entities and mechanics, without any rendering or DOM.
  *
- * Used by tests to prove that every World 3 level can be solved.
+ * Used by tests to prove that every toy level can be solved, and by the
+ * solver so its hints match what really happens in the game.
  */
 import * as Matter from 'matter-js';
 import { PhysicsManager } from './PhysicsManager.js';
 import { MechanicsSystem } from './MechanicsSystem.js';
 import { buildLevelEntities } from './levelEntities.js';
 import { LEGACY_RESTITUTION } from '../mechanics.js';
+import { hookSways } from '../levels.js';
 
 const FRAME_MS = 1000 / 60;
 
@@ -64,12 +66,12 @@ export function simulateLevel(level, options = {}) {
         });
     });
 
-    // Mirror Game.startPlay(): hook sway (level 4+) offsets the start and
+    // Mirror Game.startPlay(): hook sway (World 2+) offsets the start and
     // gives the ball a sideways push. The ball keeps swaying for the 300 ms
     // release animation, so position is sampled slightly later.
     let x = level.ballStart.x;
     let vx = 0;
-    if (swayPhase !== null && level.id >= 4) {
+    if (swayPhase !== null && hookSways(level)) {
         x += Math.sin(swayPhase + 300 / 800) * 10;
         vx = Math.cos(swayPhase) * 12.5 * 0.15;
     }

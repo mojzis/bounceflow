@@ -100,7 +100,7 @@ export class LevelManager {
         this.game.gates = entities.gates;
         this.game.fans = entities.fans;
 
-        // World 3: the ball's own elasticity decides every bounce
+        // Toy levels: the ball's own elasticity decides every bounce
         this.game.physics.setWallRestitution(level.trueElasticity ? 0 : LEGACY_RESTITUTION);
         this.game.mechanics.setLevel({
             ball: entities.ball,

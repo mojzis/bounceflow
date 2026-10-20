@@ -1,5 +1,5 @@
 /**
- * World 3 mechanics: surface materials, star effects, ball weight, color gates.
+ * Toy mechanics: surface materials, star effects, ball weight, color gates.
  *
  * Pure data + functions (no DOM, no Matter.js) so rules are easy to test
  * and shared by the game and the headless level simulator.
