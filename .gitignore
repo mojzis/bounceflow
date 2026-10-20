@@ -28,4 +28,6 @@ dist-ssr
 .env
 .env.local
 .env.*.local
-cf/.scratch/
+cf
+.scratch/
+package-lock.json
