@@ -156,8 +156,8 @@ export class Target {
 
     drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
         let rot = Math.PI / 2 * 3;
-        let x = cx;
-        let y = cy;
+        let x;
+        let y;
         const step = Math.PI / spikes;
 
         ctx.beginPath();

@@ -384,8 +384,7 @@ export class RenderingSystem {
             const currentAttempt = this.game.solver.attempts[this.game.solver.attempts.length - 1];
 
             // Show surfaces being tested
-            const level = getLevel(this.game.currentLevel);
-            currentAttempt.config.forEach((configSurface, index) => {
+            currentAttempt.config.forEach((configSurface) => {
                 if (configSurface.locked) return;
 
                 const angleRad = (configSurface.angle * Math.PI) / 180;
@@ -581,7 +580,7 @@ export class RenderingSystem {
         ctx.stroke();
 
         // Draw collision/impact points with force vectors
-        this.game.collisionData.forEach((collision, index) => {
+        this.game.collisionData.forEach((collision) => {
             // Draw impact point
             ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
             ctx.beginPath();

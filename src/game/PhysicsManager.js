@@ -61,7 +61,7 @@ export class PhysicsManager {
         });
     }
 
-    update(deltaTime) {
+    update() {
         // Update physics with fixed timestep (16.67ms = 60Hz)
         const fixedTimeStep = 1000 / 60;
         Matter.Engine.update(this.engine, fixedTimeStep);
